@@ -24,3 +24,17 @@ RegisterCommand("spz", function(source, args)
         _G.DebugMode = DebugActive 
     end
 end, true)
+
+-- 8.3 Client Error Relay (Server Receiver)
+AddEventHandler("SPZ:clientError", function(message, trace)
+    local source = source
+    local session = exports["spz-core"]:GetPlayerSession(source)
+    local identity = session and session.name or "Unknown ("..source..")"
+    
+    print(string.format("^1[CLIENT ERROR] Player: %s | Source: %s^0", identity, source))
+    print(string.format("^1[Message]^0 %s", tostring(message)))
+    if trace then
+        print(string.format("^3[Trace]^0\n%s", tostring(trace)))
+    end
+end)
+
