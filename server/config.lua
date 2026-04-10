@@ -40,37 +40,28 @@ local function ValidateConfig(cfg)
     return cfg
 end
 
--- 2.1 config.lua Loader
+-- 2.1 Config Validation & Merge
 local function LoadAndMergeConfig(isReload)
-    -- If using shared_script, the global 'Config' will update on restart.
-    -- To hot reload without restarting the resource, we use load() / loadfile()
-    local configFile = LoadResourceFile(GetCurrentResourceName(), "config.lua")
-    if configFile then
-        local configFn, err = load(configFile)
-        if configFn then
-            -- Create a sandboxed environment to just grab the Config table safely
-            local env = { Config = {} }
-            setfenv(configFn, env)
-            pcall(configFn)
-            
-            local freshConfig = ValidateConfig(env.Config)
-            
-            if isReload then
-                -- Only update non-structural keys
-                for k, v in pairs(freshConfig) do
-                    if not StructuralKeys[k] then
-                        ActiveConfig[k] = v
-                    end
-                end
-            else
-                ActiveConfig = freshConfig
+    -- In FiveM Lua 5.4, we list 'config.lua' in fxmanifest shared_scripts.
+    -- This makes the global 'Config' table available automatically.
+    
+    if not Config then
+        print("^1[spz-core] ERROR: 'Config' global is nil. Ensure 'config.lua' is loaded in fxmanifest.^0")
+        ActiveConfig = ValidateConfig(DefaultConfig)
+        return
+    end
+
+    local freshConfig = ValidateConfig(Config)
+    
+    if isReload then
+        -- Only update non-structural keys during hot-reload
+        for k, v in pairs(freshConfig) do
+            if not StructuralKeys[k] then
+                ActiveConfig[k] = v
             end
-        else
-            print("^1[spz-core] ERROR parsing config.lua: " .. tostring(err) .. "^0")
         end
     else
-        print("^1[spz-core] ERROR missing config.lua. Using default config.^0")
-        ActiveConfig = ValidateConfig(DefaultConfig)
+        ActiveConfig = freshConfig
     end
 end
 
