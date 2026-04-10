@@ -36,31 +36,36 @@ local function InitializeSystems()
     
     Citizen.CreateThread(function()
         local success, err = pcall(function()
-            -- 1. config
-            print("[spz-core] Loading config...")
-            -- TODO: Initialize Config
+            -- 1. config (Already loaded via server_scripts)
+            print("[spz-core] Config loaded.")
             
             -- 2. DB ping
             print("[spz-core] Connecting and pinging database...")
             local dbReady = exports.oxmysql:executeSync("SELECT 1")
             if not dbReady then error("Database ping failed") end
             
-            -- 3. session manager
-            print("[spz-core] Initializing player sessions...")
-            -- TODO: Initialize Sessions
+            -- 3. session manager - Handle players already on server
+            print("[spz-core] Initializing player sessions for online players...")
+            local players = GetPlayers()
+            for _, src in ipairs(players) do
+                local source = tonumber(src)
+                -- Get identifiers for existing player
+                local identifier
+                for i = 0, GetNumPlayerIdentifiers(source) - 1 do
+                    local id = GetPlayerIdentifier(source, i)
+                    if string.sub(id, 1, string.len("license:")) == "license:" then
+                        identifier = id
+                        break
+                    end
+                end
+                
+                if identifier then
+                    exports["spz-core"]:CreateSession(source, GetPlayerName(source), identifier)
+                end
+            end
             
-            -- 4. state machine
-            print("[spz-core] Initializing state machine...")
-            -- TODO: Initialize State Machine
-            
-            -- 5. bucket manager
-            print("[spz-core] Initializing routing bucket manager...")
-            -- TODO: Initialize Buckets
-            
-            -- 6. module registry
-            print("[spz-core] Initializing module registry...")
-            -- TODO: Initialize Registry
-
+            -- 4. state machine & others (Initialized via file load)
+            print("[spz-core] State machine and routing systems online.")
         end)
 
         if not success then

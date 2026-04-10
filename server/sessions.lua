@@ -16,6 +16,30 @@ exports("GetPlayerSession", function(source)
     return ActiveSessions[tonumber(source)]
 end)
 
+local function CreateSession(source, name, identifier)
+    -- 4.1 Session Object
+    ActiveSessions[source] = {
+        source     = source,
+        identifier = identifier,
+        name       = name,
+        state      = SPZ.State.IDLE, 
+        bucket     = 0,
+        vehicle    = 0,
+        joinedAt   = os.time(),
+        lastSeen   = os.time()
+    }
+    
+    -- Register to bucket 0
+    if exports["spz-core"].AssignPlayerToBucket then
+        exports["spz-core"]:AssignPlayerToBucket(source, 0)
+    end
+    
+    TriggerEvent(SPZ.Events.PLAYER_CONNECTED, source)
+    return ActiveSessions[source]
+end
+
+exports("CreateSession", CreateSession)
+
 exports("GetAllSessions", function()
     return ActiveSessions
 end)
@@ -39,22 +63,9 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
     -- local dbPlayer = exports.oxmysql:singleSync("SELECT * FROM spz_players WHERE identifier = ?", {identifier})
     -- For now, continue assuming DB resolve succeeds:
     
-    -- 4.1 Session Object
-    ActiveSessions[source] = {
-        source     = source,
-        identifier = identifier,
-        name       = name,
-        state      = SPZ.State.IDLE, -- SPZ.State requires shared/states.lua
-        bucket     = 0,
-        vehicle    = 0,
-        joinedAt   = os.time(),
-        lastSeen   = os.time()
-    }
+    CreateSession(source, name, identifier)
 
     deferrals.done()
-
-    -- Fire connect event
-    TriggerEvent(SPZ.Events.PLAYER_CONNECTED, source)
 end)
 
 -- 4.3 Disconnect Handler
