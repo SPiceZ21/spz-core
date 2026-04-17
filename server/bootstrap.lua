@@ -1,3 +1,22 @@
+local function VersionCompare(v1, v2)
+    local function parse(v)
+        local parts = {}
+        for part in string.gmatch(v, "%d+") do
+            table.insert(parts, tonumber(part))
+        end
+        return parts
+    end
+    local p1 = parse(v1)
+    local p2 = parse(v2)
+    for i = 1, math.max(#p1, #p2) do
+        local n1 = p1[i] or 0
+        local n2 = p2[i] or 0
+        if n1 < n2 then return -1
+        elseif n1 > n2 then return 1 end
+    end
+    return 0
+end
+
 local function CheckHardDependencies()
     local hardDeps = { "spz-lib", "oxmysql" }
     for _, name in ipairs(hardDeps) do
@@ -22,8 +41,7 @@ local function CheckDependency(name, minVersion)
 
     local currentVersion = GetResourceMetadata(name, "version", 0)
     if currentVersion and minVersion then
-        -- This is a basic string comparison fallback for semver
-        if currentVersion < minVersion then
+        if VersionCompare(currentVersion, minVersion) == -1 then
             print(string.format("^3[spz-core] WARN: Dependency '%s' version (%s) is lower than recommended (%s).^0", name, currentVersion, minVersion))
         end
     end
