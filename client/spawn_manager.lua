@@ -9,14 +9,14 @@ if GetResourceState("spawnmanager") == "started" then
     end)
 end
 
-RegisterNetEvent("SPZ:spawnPlayerTarget", function(modelStr)
+RegisterNetEvent("SPZ:spawnPlayerTarget", function(data)
     local ped = PlayerPedId()
 
     DoScreenFadeOut(500)
     Wait(500)
 
     -- Force model
-    local modelHash = GetHashKey(modelStr)
+    local modelHash = data.gender == 0 and `mp_m_freemode_01` or `mp_f_freemode_01`
     RequestModel(modelHash)
     while not HasModelLoaded(modelHash) do Wait(0) end
     SetPlayerModel(PlayerId(), modelHash)
@@ -39,6 +39,9 @@ RegisterNetEvent("SPZ:spawnPlayerTarget", function(modelStr)
     exports["spz-identity"]:SetPlayerState("FREEROAM")
 
     isDead = false
+
+    -- Signal appearance to apply outfit now ped is ready
+    TriggerEvent("SPZ:applyOutfit")
 
     DoScreenFadeIn(1000)
 end)
