@@ -37,12 +37,14 @@ server_scripts {
   'server/registry.lua',
   'server/middleware.lua',
   'server/debug.lua',
+  'server/spawn_manager.lua',
 }
 
 client_scripts {
   'client/main.lua',
   'client/config_sync.lua',
   'client/error_relay.lua',
+  'client/spawn_manager.lua',
 }
 
 dependencies {
