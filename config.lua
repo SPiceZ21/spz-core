@@ -19,3 +19,6 @@ Config.hud = {
     locale = "en",                      -- Language
     display_units = "mph"               -- "mph" or "kmh"
 }
+
+-- Engine Anchors
+Config.SafeZone = { coords = vector3(-899.6, -2039.5, 9.4), heading = 45.0 }
