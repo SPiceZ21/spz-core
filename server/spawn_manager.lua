@@ -3,14 +3,12 @@
 local function SpawnPlayer(source, profile)
     if not profile then return end
 
-    -- Map database gender back to model hash
-    local spawnModel = "mp_m_freemode_01"
-    if profile.gender == 1 then
-        spawnModel = "mp_f_freemode_01"
-    end
+    local data = {
+        gender = profile.gender
+    }
 
     -- Tell client to execute physical spawning logic
-    TriggerClientEvent("SPZ:spawnPlayerTarget", source, spawnModel)
+    TriggerClientEvent("SPZ:spawnPlayerTarget", source, data)
 end
 
 -- Catch returning players skipping character creation
