@@ -48,6 +48,9 @@ exports("SetPlayerState", function(source, newState)
     -- Update session object
     session.state = newState
     
+    -- Sync to state bag for client-side access (e.g. nametags)
+    Player(source).state:set('spz:state', newState, true)
+    
     -- Fire 5.5 State Change Event
     TriggerEvent(SPZ.Events.STATE_CHANGED, source, oldState, newState)
     -- Also sync to the client natively using our wrapper (conceptually identical to Emit here)
