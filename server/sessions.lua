@@ -34,6 +34,7 @@ local function CreateSession(source, name, identifier)
         exports["spz-core"]:AssignPlayerToBucket(source, 0)
     end
     
+    print("^2[spz-core] DEBUG: Firing SPZ:playerConnected for source " .. tostring(source) .. "^7")
     TriggerEvent(SPZ.Events.PLAYER_CONNECTED, source)
     return ActiveSessions[source]
 end
