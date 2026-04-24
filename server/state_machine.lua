@@ -5,8 +5,9 @@ local MAX_HISTORY = 5
 
 -- 5.2 Transition Validator
 local ValidTransitions = {
-    [SPZ.State.IDLE]       = { [SPZ.State.FREEROAM] = true, [SPZ.State.QUEUED]     = true },
-    [SPZ.State.FREEROAM]   = { [SPZ.State.IDLE]     = true, [SPZ.State.QUEUED]     = true },
+    [SPZ.State.IDLE]       = { [SPZ.State.FREEROAM] = true, [SPZ.State.QUEUED]     = true, [SPZ.State.MENU] = true },
+    [SPZ.State.MENU]       = { [SPZ.State.IDLE]     = true, [SPZ.State.FREEROAM]   = true },
+    [SPZ.State.FREEROAM]   = { [SPZ.State.IDLE]     = true, [SPZ.State.QUEUED]     = true, [SPZ.State.MENU] = true },
     [SPZ.State.QUEUED]     = { [SPZ.State.RACING]   = true, [SPZ.State.IDLE]       = true },
     [SPZ.State.RACING]     = { [SPZ.State.IDLE]     = true },
     [SPZ.State.SPECTATING] = { [SPZ.State.IDLE]     = true }
