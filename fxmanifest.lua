@@ -36,6 +36,8 @@ server_scripts {
   'server/permissions.lua',
   'server/registry.lua',
   'server/middleware.lua',
+  'server/cleanup.lua',
+  'server/player_context.lua',
   'server/debug.lua',
 }
 
