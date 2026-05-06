@@ -22,7 +22,6 @@ local function CreateSession(source, name, identifier)
         source     = source,
         identifier = identifier,
         name       = name,
-        state      = SPZ.State.IDLE, 
         bucket     = 0,
         vehicle    = 0,
         joinedAt   = os.time(),

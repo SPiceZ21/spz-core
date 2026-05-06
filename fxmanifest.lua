@@ -3,7 +3,7 @@ game 'gta5'
 
 name 'spz-core'
 description 'SPiceZ-Core — Framework bootstrap, sessions, state machine, routing buckets'
-version '1.2.4'
+version '2.0.0'
 author 'SPiceZ-Core'
 
 shared_scripts {
@@ -17,7 +17,6 @@ shared_scripts {
   '@spz-lib/shared/string.lua',
   'config.lua',
   'shared/version.lua',
-  'shared/states.lua',
   'shared/events.lua',
   'shared/emitter.lua',
   'shared/logger.lua',
@@ -31,7 +30,6 @@ server_scripts {
   'server/config.lua',
   'server/sessions.lua',
   'server/cache.lua',
-  'server/state_machine.lua',
   'server/buckets.lua',
   'server/permissions.lua',
   'server/registry.lua',
