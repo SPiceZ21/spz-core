@@ -62,10 +62,18 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
     -- Pseudo-DB lookup: Insert or retrieve player records... 
     -- local dbPlayer = exports.oxmysql:singleSync("SELECT * FROM spz_players WHERE identifier = ?", {identifier})
     -- For now, continue assuming DB resolve succeeds:
-    
-    CreateSession(source, name, identifier)
 
     deferrals.done()
+end)
+
+AddEventHandler("playerJoining", function()
+    local source = source
+    local name = GetPlayerName(source)
+    local identifier = GetLicense(source)
+    if identifier then
+        print("^2[spz-core] Player " .. tostring(name) .. " joining with real Server ID: " .. tostring(source) .. "^7")
+        CreateSession(source, name, identifier)
+    end
 end)
 
 -- 4.3 Disconnect Handler
