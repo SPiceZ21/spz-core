@@ -20,5 +20,9 @@ Config.hud = {
     display_units = "mph"               -- "mph" or "kmh"
 }
 
+-- Environment Control
+Config.disable_npcs = true                  -- Set to true to disable all ambient NPCs, traffic, and random cops
+
 -- Engine Anchors
 Config.SafeZone = { coords = vector3(-899.6, -2039.5, 9.4), heading = 45.0 }
+

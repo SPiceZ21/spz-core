@@ -54,3 +54,32 @@ Citizen.CreateThread(function()
         EndScaleformMovieMethod()
     end
 end)
+
+-- ── Disable Ambient NPCs & Traffic ─────────────────────────────────────────
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0) -- Must run every frame to override NPC generation multipliers
+        
+        if Config.disable_npcs then
+            -- Disable NPC vehicles/traffic
+            SetVehicleDensityMultiplierThisFrame(0.0)
+            SetRandomVehicleDensityMultiplierThisFrame(0.0)
+            SetParkedVehicleDensityMultiplierThisFrame(0.0)
+            
+            -- Disable NPC pedestrians
+            SetPedDensityMultiplierThisFrame(0.0)
+            SetScenarioPedDensityMultiplierThisFrame(0.0)
+            
+            -- Disable dispatch / random cops
+            SetCreateRandomCops(false)
+            SetCreateRandomCopsNotOnScenarios(false)
+            SetCreateRandomCopsOnScenarios(false)
+            CancelCurrentPoliceReport()
+            
+            -- Disable garbage trucks and random boats
+            SetGarbageTrucks(false)
+            SetRandomBoats(false)
+        end
+    end
+end)
+
