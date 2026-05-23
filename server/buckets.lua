@@ -52,10 +52,21 @@ local function DeleteBucket(bucketId)
     local bucket = BucketRegistry[bucketId]
     if not bucket then return false end
     
-    -- Prevent deletion if players are still active inside
+    -- Gracefully handle remaining players rather than throwing a hard error and crashing calling scripts
     if #bucket.players > 0 then
-        error(string.format("^1[spz-core] Cannot delete bucket %d (%s) - players are still inside!^0", bucketId, bucket.label))
-        return false
+        print(string.format("^3[spz-core] Warning: Players still inside bucket %d (%s) during deletion. Moving them to freeroam.^0", bucketId, bucket.label))
+        local tempPlayers = {}
+        for _, playerSrc in ipairs(bucket.players) do
+            table.insert(tempPlayers, playerSrc)
+        end
+        for _, playerSrc in ipairs(tempPlayers) do
+            local session = exports["spz-core"]:GetPlayerSession(playerSrc)
+            if session then
+                exports["spz-core"]:AssignPlayerToBucket(playerSrc, 0)
+            else
+                arrayRemove(bucket.players, playerSrc)
+            end
+        end
     end
     
     local activeTime = os.time() - bucket.createdAt
@@ -106,7 +117,13 @@ end)
 local function RemovePlayerFromBucket(source)
     source = tonumber(source)
     local session = exports["spz-core"]:GetPlayerSession(source)
-    if not session then return false end
+    if not session then
+        -- Sweep registry as fallback to prevent disconnected players from lingering
+        for id, b in pairs(BucketRegistry) do
+            arrayRemove(b.players, source)
+        end
+        return true
+    end
     
     local oldBucket = session.bucket
     if oldBucket == 0 then return true end -- Already in freeroam bucket
