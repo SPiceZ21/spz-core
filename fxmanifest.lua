@@ -7,14 +7,6 @@ version '2.0.0'
 author 'SPiceZ-Core'
 
 shared_scripts {
-  '@spz-lib/shared/main.lua',
-  '@spz-lib/shared/callbacks.lua',
-  '@spz-lib/shared/notify.lua',
-  '@spz-lib/shared/timer.lua',
-  '@spz-lib/shared/logger.lua',
-  '@spz-lib/shared/math.lua',
-  '@spz-lib/shared/table.lua',
-  '@spz-lib/shared/string.lua',
   'config.lua',
   'shared/version.lua',
   'shared/events.lua',
@@ -46,7 +38,6 @@ client_scripts {
 }
 
 dependencies {
-  'spz-lib',
   'oxmysql',
   'ox_lib',
 }
