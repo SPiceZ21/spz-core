@@ -18,17 +18,10 @@ local function VersionCompare(v1, v2)
 end
 
 local function CheckHardDependencies()
-    local hardDeps = { "spz-lib", "oxmysql" }
+    local hardDeps = { "oxmysql" }
     for _, name in ipairs(hardDeps) do
         if GetResourceState(name) ~= "started" then
             error(string.format("^1[spz-core] FATAL ERROR: Hard dependency '%s' is missing or not running. Startup halted.^0", name))
-        end
-    end
-
-    -- Explicit API check as per 1.1 referenced in documentation 
-    if exports["spz-lib"] and exports["spz-lib"].isReady then
-        if not exports["spz-lib"]:isReady() then
-            error("^1[spz-core] FATAL ERROR: spz-lib reports it is not ready. Startup halted.^0")
         end
     end
 end
