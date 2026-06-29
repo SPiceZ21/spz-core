@@ -7,6 +7,7 @@ version '2.0.0'
 author 'SPiceZ-Core'
 
 shared_scripts {
+  '@ox_lib/init.lua',
   'config.lua',
   'shared/version.lua',
   'shared/events.lua',
