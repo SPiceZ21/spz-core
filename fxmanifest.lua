@@ -36,6 +36,7 @@ client_scripts {
   'client/main.lua',
   'client/config_sync.lua',
   'client/error_relay.lua',
+  'client/environment.lua',
 }
 
 dependencies {
