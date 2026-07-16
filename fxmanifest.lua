@@ -18,6 +18,7 @@ shared_scripts {
 server_scripts {
   '@oxmysql/lib/MySQL.lua',
   'config.lua',
+  'server/migrations.lua',   -- schema owner: runs before anything touches the DB
   'server/main.lua',
   'server/bootstrap.lua',
   'server/config.lua',
