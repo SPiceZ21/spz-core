@@ -1,0 +1,123 @@
+-- client/environment.lua
+-- Personal, client-side time & weather. Affects only the local player, usable
+-- by everyone (no server, no permissions). Reverts to server-synced defaults
+-- when cleared.
+
+local myWeather = nil          -- nil = follow server/default
+local myHour, myMinute = nil, nil
+
+-- ── Apply loop ────────────────────────────────────────────────────────────────
+
+local function applyWeather()
+    if not myWeather then return end
+    SetWeatherTypePersist(myWeather)
+    SetWeatherTypeNowPersist(myWeather)
+    SetWeatherTypeNow(myWeather)
+    SetOverrideWeather(myWeather)
+end
+
+CreateThread(function()
+    while true do
+        if myHour then
+            NetworkOverrideClockTime(myHour, myMinute or 0, 0)   -- hold my chosen time
+        end
+        if myWeather then
+            applyWeather()
+        end
+        Wait(1000)
+    end
+end)
+
+-- ── /weather — ox_lib dropdown ────────────────────────────────────────────────
+
+local WEATHER_OPTIONS = {
+    { value = "__reset",    label = "↺ Reset (server default)" },
+    { value = "EXTRASUNNY", label = "Extra Sunny" },
+    { value = "CLEAR",      label = "Clear" },
+    { value = "CLOUDS",     label = "Cloudy" },
+    { value = "OVERCAST",   label = "Overcast" },
+    { value = "SMOG",       label = "Smog" },
+    { value = "FOGGY",      label = "Foggy" },
+    { value = "CLEARING",   label = "Clearing" },
+    { value = "RAIN",       label = "Rain" },
+    { value = "THUNDER",    label = "Thunder" },
+    { value = "SNOW",       label = "Snow" },
+    { value = "SNOWLIGHT",  label = "Light Snow" },
+    { value = "BLIZZARD",   label = "Blizzard" },
+    { value = "XMAS",       label = "Christmas" },
+    { value = "HALLOWEEN",  label = "Halloween" },
+    { value = "NEUTRAL",    label = "Neutral" },
+}
+
+RegisterCommand("weather", function()
+    local input = lib.inputDialog("My Weather", {
+        {
+            type     = "select",
+            label    = "Weather",
+            options  = WEATHER_OPTIONS,
+            default  = myWeather or "__reset",
+            required = true,
+        },
+    })
+    if not input or not input[1] then return end
+
+    if input[1] == "__reset" then
+        myWeather = nil
+        ClearOverrideWeather()
+        ClearWeatherTypePersist()
+        lib.notify({ description = "Weather reset to server default", type = "info" })
+        return
+    end
+
+    myWeather = input[1]
+    applyWeather()
+    lib.notify({ description = "Weather → " .. myWeather, type = "success" })
+end, false)
+
+-- ── /time — args ──────────────────────────────────────────────────────────────
+--   /time morning|noon|evening|night|midnight|dawn|dusk
+--   /time <hour> [minute]     e.g.  /time 18 30
+--   /time reset               back to server clock
+
+local TIME_PRESETS = {
+    dawn     = { 6,  0 },
+    morning  = { 8,  0 },
+    noon     = { 12, 0 },
+    midday   = { 12, 0 },
+    evening  = { 18, 0 },
+    dusk     = { 20, 0 },
+    night    = { 22, 0 },
+    midnight = { 0,  0 },
+}
+
+RegisterCommand("time", function(_, args)
+    if not args[1] then
+        lib.notify({ description = "Usage: /time <morning|evening|night|...> | <hour> [min] | reset", type = "inform" })
+        return
+    end
+
+    local a = args[1]:lower()
+
+    if a == "reset" then
+        myHour, myMinute = nil, nil
+        NetworkClearClockTimeOverride()
+        lib.notify({ description = "Time reset to server clock", type = "info" })
+        return
+    end
+
+    local preset = TIME_PRESETS[a]
+    if preset then
+        myHour, myMinute = preset[1], preset[2]
+    else
+        local hour = tonumber(args[1])
+        if not hour then
+            lib.notify({ description = "Unknown time. Try: morning, noon, evening, night, or 0-23", type = "error" })
+            return
+        end
+        myHour   = math.floor(hour) % 24
+        myMinute = (math.floor(tonumber(args[2]) or 0)) % 60
+    end
+
+    NetworkOverrideClockTime(myHour, myMinute, 0)
+    lib.notify({ description = ("Time → %02d:%02d"):format(myHour, myMinute), type = "success" })
+end, false)
