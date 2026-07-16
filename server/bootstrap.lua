@@ -52,7 +52,7 @@ local function InitializeSystems()
             
             -- 2. DB ping
             print("[spz-core] Connecting and pinging database...")
-            local dbReady = exports.oxmysql:executeSync("SELECT 1")
+            local dbReady = MySQL.scalar.await("SELECT 1")
             if not dbReady then error("Database ping failed") end
             
             -- 3. session manager - Handle players already on server

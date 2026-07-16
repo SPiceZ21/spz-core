@@ -13,7 +13,7 @@
 
 | Side   | File                  | Purpose                                        |
 | ------ | --------------------- | ---------------------------------------------- |
-| Shared | `@spz-lib shared utils` | spz-lib shared utility imports               |
+| Shared | `@ox_lib/init.lua`    | ox_lib shared imports (`lib.*`)                |
 | Shared | `config.lua`          | Core framework configuration                   |
 | Shared | `shared/version.lua`  | Version constant and compatibility checks      |
 | Shared | `states.lua`          | Global framework state definitions             |
@@ -49,7 +49,6 @@
 | Client | `error_relay.lua`     | Relay client errors to server for logging      |
 
 ## Dependencies
-- spz-lib
 - oxmysql
 - ox_lib
 

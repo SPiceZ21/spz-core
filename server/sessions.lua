@@ -60,7 +60,6 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
     end
 
     -- Pseudo-DB lookup: Insert or retrieve player records... 
-    -- local dbPlayer = exports.oxmysql:singleSync("SELECT * FROM spz_players WHERE identifier = ?", {identifier})
     -- For now, continue assuming DB resolve succeeds:
 
     deferrals.done()
