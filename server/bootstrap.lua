@@ -54,7 +54,14 @@ local function InitializeSystems()
             print("[spz-core] Connecting and pinging database...")
             local dbReady = MySQL.scalar.await("SELECT 1")
             if not dbReady then error("Database ping failed") end
-            
+
+            -- 2b. Schema. coreReady must not fire until every table exists, or
+            -- dependants that query on that event hit a half-built database.
+            print("[spz-core] Waiting for database migrations...")
+            if not SPZ.WaitForMigrations(60000) then
+                error("Database migrations did not complete")
+            end
+
             -- 3. session manager - Handle players already on server
             print("[spz-core] Initializing player sessions for online players...")
             local players = GetPlayers()
