@@ -10,10 +10,28 @@ local MIGRATIONS = {
     "001_core_schema.sql",
     "002_race_columns.sql",
     "003_module_tables.sql",
+    "004_identity_columns.sql",
+    "005_track_sectors.sql",
 }
 
 SPZ = SPZ or {}
 SPZ.MigrationsReady = false
+SPZ.MigrationsFailed = false
+
+-- Anything that queries a SPZ table on boot must wait behind this, or it races
+-- the very migration that creates the table it reads.
+local function WaitForMigrations(timeoutMs)
+    local deadline = GetGameTimer() + (timeoutMs or 60000)
+    while not SPZ.MigrationsReady do
+        if SPZ.MigrationsFailed then return false end
+        if GetGameTimer() > deadline then return false end
+        Wait(50)
+    end
+    return true
+end
+
+SPZ.WaitForMigrations = WaitForMigrations
+exports("WaitForMigrations", WaitForMigrations)
 
 -- Split a file into individual statements (oxmysql runs one per query).
 -- Strips line comments and blank statements.
@@ -74,6 +92,7 @@ CreateThread(function()
                 MySQL.insert.await("INSERT INTO spz_migrations (name) VALUES (?)", { name })
                 ran = ran + 1
             else
+                SPZ.MigrationsFailed = true
                 print("^1[spz-core] Migration run aborted — fix the error above and restart.^0")
                 return
             end
@@ -81,6 +100,7 @@ CreateThread(function()
     end
 
     SPZ.MigrationsReady = true
+    TriggerEvent("SPZ:migrationsReady")
     if ran > 0 then
         print(("^2[spz-core] Database up to date (%d migration(s) applied).^0"):format(ran))
     else
