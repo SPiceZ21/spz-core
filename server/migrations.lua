@@ -13,6 +13,7 @@ local MIGRATIONS = {
     "004_identity_columns.sql",
     "005_track_sectors.sql",
     "006_racelines.sql",
+    "007_nation_racenumber.sql",
 }
 
 SPZ = SPZ or {}
