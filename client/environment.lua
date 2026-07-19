@@ -11,14 +11,29 @@ local myHour, myMinute = nil, nil
 -- baseline from GlobalState (set by spz-core/server/environment_sync.lua),
 -- so all clients see the same world.
 
+-- Weather is applied ONLY when it changes. Calling SetWeatherTypeNow /
+-- SetOverrideWeather on a timer restarts the weather transition on every call,
+-- which reads as a flickering / pulsing sky — the classic cause of "weather
+-- flickers" even with no other script involved.
+local appliedWeather = nil
+
 local function applyWeather(w)
-    if not w then return end
+    if not w or w == appliedWeather then return end
+    appliedWeather = w
     SetWeatherTypePersist(w)
     SetWeatherTypeNowPersist(w)
     SetWeatherTypeNow(w)
     SetOverrideWeather(w)
 end
 
+-- Let an external reset (ClearOverrideWeather) re-apply next tick.
+function _invalidateWeatherCache()
+    appliedWeather = nil
+end
+
+-- The clock is re-asserted every frame. GTA's clock keeps ticking between
+-- calls, so a 1s interval let it drift ~1 in-game minute and snap back —
+-- visible as lighting/shadow flicker. One native per frame is cheap.
 CreateThread(function()
     while true do
         local h, m = myHour, myMinute or 0
@@ -29,9 +44,15 @@ CreateThread(function()
         if h then
             NetworkOverrideClockTime(h, m, 0)
         end
+        Wait(0)
+    end
+end)
 
+-- Weather only needs checking occasionally — it changes rarely.
+CreateThread(function()
+    while true do
         applyWeather(myWeather or GlobalState.envWeather)
-        Wait(1000)
+        Wait(2000)
     end
 end)
 
@@ -72,6 +93,7 @@ RegisterCommand("weather", function()
         myWeather = nil
         ClearOverrideWeather()
         ClearWeatherTypePersist()
+        _invalidateWeatherCache()   -- let the synced default re-apply
         lib.notify({ description = "Weather reset to server default", type = "info" })
         return
     end
