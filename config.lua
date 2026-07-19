@@ -26,3 +26,16 @@ Config.disable_npcs = true                  -- Set to true to disable all ambien
 -- Engine Anchors
 Config.SafeZone = { coords = vector3(-899.6, -2039.5, 9.4), heading = 45.0 }
 
+
+-- Synced Environment (server-authoritative defaults)
+-- Everyone sees the same time & weather unless they set a personal override
+-- with /time or /weather (which always wins locally until reset).
+Config.Environment = {
+    weather = "EXTRASUNNY",   -- canonical weather for the whole server
+    hour    = 19,             -- canonical clock (locked golden-hour evening)
+    minute  = 30,
+}
+
+-- Global no-collision: players and their vehicles never collide with each
+-- other (world collision is unaffected). Set false to restore normal contact.
+Config.GlobalNoCollision = true

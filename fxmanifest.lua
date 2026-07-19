@@ -31,6 +31,7 @@ server_scripts {
   'server/cleanup.lua',
   'server/player_context.lua',
   'server/debug.lua',
+  'server/environment_sync.lua',
 }
 
 client_scripts {
@@ -38,6 +39,7 @@ client_scripts {
   'client/config_sync.lua',
   'client/error_relay.lua',
   'client/environment.lua',
+  'client/ghost.lua',
 }
 
 dependencies {
