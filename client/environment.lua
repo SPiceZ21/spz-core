@@ -7,23 +7,30 @@ local myWeather = nil          -- nil = follow server/default
 local myHour, myMinute = nil, nil
 
 -- ── Apply loop ────────────────────────────────────────────────────────────────
+-- Personal override wins; otherwise everyone renders the server-synced
+-- baseline from GlobalState (set by spz-core/server/environment_sync.lua),
+-- so all clients see the same world.
 
-local function applyWeather()
-    if not myWeather then return end
-    SetWeatherTypePersist(myWeather)
-    SetWeatherTypeNowPersist(myWeather)
-    SetWeatherTypeNow(myWeather)
-    SetOverrideWeather(myWeather)
+local function applyWeather(w)
+    if not w then return end
+    SetWeatherTypePersist(w)
+    SetWeatherTypeNowPersist(w)
+    SetWeatherTypeNow(w)
+    SetOverrideWeather(w)
 end
 
 CreateThread(function()
     while true do
-        if myHour then
-            NetworkOverrideClockTime(myHour, myMinute or 0, 0)   -- hold my chosen time
+        local h, m = myHour, myMinute or 0
+        if not h then
+            local t = GlobalState.envTime
+            if t then h, m = t.h, t.m end
         end
-        if myWeather then
-            applyWeather()
+        if h then
+            NetworkOverrideClockTime(h, m, 0)
         end
+
+        applyWeather(myWeather or GlobalState.envWeather)
         Wait(1000)
     end
 end)
