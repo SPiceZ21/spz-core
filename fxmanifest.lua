@@ -40,6 +40,7 @@ client_scripts {
   'client/error_relay.lua',
   'client/environment.lua',
   'client/ghost.lua',
+  'client/fade.lua',
 }
 
 dependencies {
