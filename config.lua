@@ -36,6 +36,3 @@ Config.Environment = {
     minute  = 30,
 }
 
--- Global no-collision: players and their vehicles never collide with each
--- other (world collision is unaffected). Set false to restore normal contact.
-Config.GlobalNoCollision = true
