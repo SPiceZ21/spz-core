@@ -5,14 +5,16 @@
 --
 -- World collision (roads, buildings, props, NPC traffic) is untouched.
 --
--- Two things happen per frame, and both must be per frame:
---   1. SetEntityNoCollisionEntity  — dropped whenever an entity re-streams
---      into scope, so a one-shot pass silently decays.
---   2. DisableCamCollisionForObject — without this the gameplay camera still
---      collides with the cars you are driving through: it gets shoved, snaps
---      in tight, or clips inside their bodywork. Disabling cam collision on
---      the same entities makes the camera ignore them exactly like the car
---      does. This is the "no-collision cam bug".
+-- Uses the engine's native ghost-mode system (SetLocalPlayerAsGhost /
+-- SetNetworkVehicleAsGhost) which properly excludes player-to-player
+-- collision while preserving ground and world physics. The old approach of
+-- SetEntityCollision(remote, false, false) killed ALL collision on the remote
+-- copy — including ground — causing other players' cars to visually sink
+-- through the road and pop back up.
+--
+-- Belt-and-braces: SetEntityNoCollisionEntity is still applied pairwise as a
+-- safety net, and DisableCamCollisionForObject keeps the gameplay camera from
+-- shoving against ghosted cars.
 
 CreateThread(function()
     while true do
@@ -20,6 +22,16 @@ CreateThread(function()
         local myVeh = GetVehiclePedIsIn(myPed, false)
         local myId  = PlayerId()
 
+        -- ── Engine ghost mode ────────────────────────────────────────────
+        -- These natives tell the engine to skip player-vs-player collision
+        -- at the physics level, without touching world/ground collision.
+        -- Must be called every frame (flag resets).
+        SetLocalPlayerAsGhost(true)
+        if myVeh ~= 0 then
+            SetNetworkVehicleAsGhost(myVeh, true)
+        end
+
+        -- ── Per-player safety net ────────────────────────────────────────
         for _, plr in ipairs(GetActivePlayers()) do
             if plr ~= myId then
                 local tPed = GetPlayerPed(plr)
@@ -27,42 +39,29 @@ CreateThread(function()
                 if tPed ~= 0 and DoesEntityExist(tPed) then
                     local tVeh = GetVehiclePedIsIn(tPed, false)
 
-                    -- ── Kill collision on the remote entities outright ──
-                    -- Pairwise no-collision alone can still let an impulse
-                    -- through: the entity's network OWNER runs its physics,
-                    -- and our local pair flag doesn't bind their side. Turning
-                    -- collision fully off on the remote copy removes it for
-                    -- good. Safe because remote entities are position-synced
-                    -- from their owner — they keep driving normally, they just
-                    -- stop interacting with anything on OUR client.
-                    SetEntityCollision(tPed, false, false)
-                    -- ...unless it is the car WE are sitting in: that vehicle
-                    -- is our own ride, and stripping its collision locally
-                    -- would drop it through the world on our screen.
-                    if tVeh ~= 0 and tVeh ~= myVeh then
-                        SetEntityCollision(tVeh, false, false)
-                    end
-
-                    -- ── Pairwise, both directions (belt and braces) ─────
-                    SetEntityNoCollisionEntity(myPed, tPed, false)
-                    SetEntityNoCollisionEntity(tPed, myPed, false)
+                    -- Pairwise no-collision (both directions) as a fallback.
+                    -- Unlike SetEntityCollision(false), this only disables
+                    -- collision between the two specific entities — ground
+                    -- and world collision stay intact.
+                    SetEntityNoCollisionEntity(myPed, tPed, true)
+                    SetEntityNoCollisionEntity(tPed, myPed, true)
 
                     if myVeh ~= 0 then
-                        SetEntityNoCollisionEntity(myVeh, tPed, false)
-                        SetEntityNoCollisionEntity(tPed, myVeh, false)
+                        SetEntityNoCollisionEntity(myVeh, tPed, true)
+                        SetEntityNoCollisionEntity(tPed, myVeh, true)
                     end
 
                     if tVeh ~= 0 then
-                        SetEntityNoCollisionEntity(myPed, tVeh, false)
-                        SetEntityNoCollisionEntity(tVeh, myPed, false)
+                        SetEntityNoCollisionEntity(myPed, tVeh, true)
+                        SetEntityNoCollisionEntity(tVeh, myPed, true)
 
                         if myVeh ~= 0 then
-                            SetEntityNoCollisionEntity(myVeh, tVeh, false)
-                            SetEntityNoCollisionEntity(tVeh, myVeh, false)
+                            SetEntityNoCollisionEntity(myVeh, tVeh, true)
+                            SetEntityNoCollisionEntity(tVeh, myVeh, true)
                         end
                     end
 
-                    -- ── Camera ignores them too ─────────────────────────
+                    -- ── Camera ignores them too ──────────────────────────
                     DisableCamCollisionForObject(tPed)
                     if tVeh ~= 0 then
                         DisableCamCollisionForObject(tVeh)

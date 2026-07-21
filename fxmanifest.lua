@@ -41,6 +41,7 @@ client_scripts {
   'client/environment.lua',
   'client/ghost.lua',
   'client/fade.lua',
+  'client/commands.lua',
 }
 
 dependencies {
