@@ -28,13 +28,13 @@ Config.NPCs = {
     enabled                = true,          -- Master switch for ambient NPCs and traffic
     
     -- Density Multipliers (0.0 = none, 0.1 - 0.3 = low density, 0.5 = medium, 1.0 = full GTA default)
-    vehicle_density        = 0.2,          -- Ambient driving traffic density multiplier (low density)
-    random_vehicle_density = 0.2,          -- Random spawned traffic density multiplier
-    parked_vehicle_density = 0.2,          -- Parked cars along roads and parking lots density multiplier
-    ped_density            = 0.1,          -- Walking pedestrians density multiplier
-    scenario_ped_density   = 0.1,          -- Sitting / standing scenario peds density multiplier
-    ambient_vehicle_range  = 0.5,          -- Spawning range for ambient vehicles multiplier
-    ambient_ped_range      = 0.5,          -- Spawning range for ambient peds multiplier
+    vehicle_density        = 0.4,          -- Ambient driving traffic density multiplier
+    random_vehicle_density = 0.4,          -- Random spawned traffic density multiplier
+    parked_vehicle_density = 0.4,          -- Parked cars along roads and parking lots density multiplier
+    ped_density            = 0.3,          -- Walking pedestrians density multiplier
+    scenario_ped_density   = 0.3,          -- Sitting / standing scenario peds density multiplier
+    ambient_vehicle_range  = 1.5,          -- Spawning range for ambient vehicles multiplier (stable long-distance stream)
+    ambient_ped_range      = 1.5,          -- Spawning range for ambient peds multiplier (stable long-distance stream)
 
     -- Cops, Dispatch & Special Vehicles
     disable_cops           = true,         -- Disable random ambient cop spawns and police calls
