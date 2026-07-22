@@ -27,12 +27,20 @@ exports("GetBucketRegistry", function()
 end)
 
 -- 6.2 CreateBucket
-exports("CreateBucket", function(label)
+exports("CreateBucket", function(label, populationEnabled)
     local id = NextBucketId
     NextBucketId = NextBucketId + 1
 
     -- Apply strict entity lockdown so freeroam entities don't bleed into the race
     SetRoutingBucketEntityLockdownMode(id, "strict")
+    
+    -- Population control: false by default for race/TT isolation unless explicitly configured
+    local npcConfig = Config and Config.NPCs or {}
+    local enablePop = populationEnabled
+    if enablePop == nil then
+        enablePop = (npcConfig.enabled ~= false and npcConfig.race_population == true)
+    end
+    SetRoutingBucketPopulationEnabled(id, enablePop)
     
     BucketRegistry[id] = {
         id        = id,
