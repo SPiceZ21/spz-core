@@ -88,14 +88,14 @@ Citizen.CreateThread(function()
                 SetAmbientVehicleRangeMultiplierThisFrame(0.0)
                 SetAmbientPedRangeMultiplierThisFrame(0.0)
             else
-                -- Apply configurable density multipliers (defaults to low density)
-                local vehDensity    = npc.vehicle_density or 0.2
-                local randDensity   = npc.random_vehicle_density or 0.2
-                local parkedDensity = npc.parked_vehicle_density or 0.2
-                local pedDensity    = npc.ped_density or 0.1
-                local scenPed       = npc.scenario_ped_density or 0.1
-                local vehRange      = npc.ambient_vehicle_range or 0.5
-                local pedRange      = npc.ambient_ped_range or 0.5
+                -- Apply configurable density multipliers (defaults to stable long-distance density)
+                local vehDensity    = npc.vehicle_density or 0.4
+                local randDensity   = npc.random_vehicle_density or 0.4
+                local parkedDensity = npc.parked_vehicle_density or 0.4
+                local pedDensity    = npc.ped_density or 0.3
+                local scenPed       = npc.scenario_ped_density or 0.3
+                local vehRange      = npc.ambient_vehicle_range or 1.5
+                local pedRange      = npc.ambient_ped_range or 1.5
 
                 SetVehicleDensityMultiplierThisFrame(vehDensity)
                 SetRandomVehicleDensityMultiplierThisFrame(randDensity)
@@ -128,6 +128,23 @@ Citizen.CreateThread(function()
 
             if npc.disable_random_boats ~= false then
                 SetRandomBoats(false)
+            end
+        end
+    end
+end)
+
+-- ── Long-Distance Ambient Ped LOD & Sync Stabilization ───────────────────────
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(2500)
+        local npc = Config and Config.NPCs or {}
+        if npc.enabled ~= false and not Config.disable_npcs then
+            local peds = GetGamePool('CPed')
+            for _, p in ipairs(peds) do
+                if DoesEntityExist(p) and not IsPedAPlayer(p) then
+                    SetEntityLodDist(p, 1000)
+                    SetPedAoBlobRender(p, true)
+                end
             end
         end
     end
