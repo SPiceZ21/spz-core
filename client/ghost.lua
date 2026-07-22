@@ -16,16 +16,28 @@ Citizen.CreateThread(function()
             SetEntityAlpha(veh, 255, false)
         end
 
-        -- KEEP NO COLLISIONS ONLY
+        -- KEEP NO COLLISIONS ONLY (all player ped/vehicle combinations)
         for _, player in ipairs(GetActivePlayers()) do
             if player ~= PlayerId() then
                 local tp = GetPlayerPed(player)
-                SetEntityNoCollisionEntity(ped, tp, true)
+                if DoesEntityExist(tp) then
+                    -- 1. Local Ped vs Remote Ped
+                    SetEntityNoCollisionEntity(ped, tp, true)
 
-                if veh ~= 0 then
                     local tv = GetVehiclePedIsIn(tp, false)
-                    if tv ~= 0 then
-                        SetEntityNoCollisionEntity(veh, tv, true)
+                    -- 2. Local Ped vs Remote Vehicle
+                    if DoesEntityExist(tv) and tv ~= 0 then
+                        SetEntityNoCollisionEntity(ped, tv, true)
+                    end
+
+                    if DoesEntityExist(veh) and veh ~= 0 then
+                        -- 3. Local Vehicle vs Remote Ped (free ped)
+                        SetEntityNoCollisionEntity(veh, tp, true)
+
+                        -- 4. Local Vehicle vs Remote Vehicle
+                        if DoesEntityExist(tv) and tv ~= 0 then
+                            SetEntityNoCollisionEntity(veh, tv, true)
+                        end
                     end
                 end
             end

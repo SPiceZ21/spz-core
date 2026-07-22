@@ -55,30 +55,80 @@ Citizen.CreateThread(function()
     end
 end)
 
--- ── Disable Ambient NPCs & Traffic ─────────────────────────────────────────
+-- ── Ambient NPCs & Traffic Density Control ──────────────────────────────────
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(0) -- Must run every frame to override NPC generation multipliers
-        
+        Citizen.Wait(0) -- Must run every frame to set NPC generation multipliers
+
         if Config.disable_npcs then
-            -- Disable NPC vehicles/traffic
+            -- Legacy hard-disable override
             SetVehicleDensityMultiplierThisFrame(0.0)
             SetRandomVehicleDensityMultiplierThisFrame(0.0)
             SetParkedVehicleDensityMultiplierThisFrame(0.0)
-            
-            -- Disable NPC pedestrians
             SetPedDensityMultiplierThisFrame(0.0)
-            SetScenarioPedDensityMultiplierThisFrame(0.0)
-            
-            -- Disable dispatch / random cops
+            SetScenarioPedDensityMultiplierThisFrame(0.0, 0.0)
+            SetAmbientVehicleRangeMultiplierThisFrame(0.0)
+            SetAmbientPedRangeMultiplierThisFrame(0.0)
             SetCreateRandomCops(false)
             SetCreateRandomCopsNotOnScenarios(false)
             SetCreateRandomCopsOnScenarios(false)
             CancelCurrentPoliceReport()
-            
-            -- Disable garbage trucks and random boats
             SetGarbageTrucks(false)
             SetRandomBoats(false)
+        else
+            local npc = Config.NPCs or {}
+
+            if npc.enabled == false then
+                -- Disabled via Config.NPCs.enabled
+                SetVehicleDensityMultiplierThisFrame(0.0)
+                SetRandomVehicleDensityMultiplierThisFrame(0.0)
+                SetParkedVehicleDensityMultiplierThisFrame(0.0)
+                SetPedDensityMultiplierThisFrame(0.0)
+                SetScenarioPedDensityMultiplierThisFrame(0.0, 0.0)
+                SetAmbientVehicleRangeMultiplierThisFrame(0.0)
+                SetAmbientPedRangeMultiplierThisFrame(0.0)
+            else
+                -- Apply configurable density multipliers (defaults to low density)
+                local vehDensity    = npc.vehicle_density or 0.2
+                local randDensity   = npc.random_vehicle_density or 0.2
+                local parkedDensity = npc.parked_vehicle_density or 0.2
+                local pedDensity    = npc.ped_density or 0.1
+                local scenPed       = npc.scenario_ped_density or 0.1
+                local vehRange      = npc.ambient_vehicle_range or 0.5
+                local pedRange      = npc.ambient_ped_range or 0.5
+
+                SetVehicleDensityMultiplierThisFrame(vehDensity)
+                SetRandomVehicleDensityMultiplierThisFrame(randDensity)
+                SetParkedVehicleDensityMultiplierThisFrame(parkedDensity)
+                SetPedDensityMultiplierThisFrame(pedDensity)
+                SetScenarioPedDensityMultiplierThisFrame(scenPed, scenPed)
+                SetAmbientVehicleRangeMultiplierThisFrame(vehRange)
+                SetAmbientPedRangeMultiplierThisFrame(pedRange)
+            end
+
+            -- Cops and Police reports
+            if npc.disable_cops ~= false then
+                SetCreateRandomCops(false)
+                SetCreateRandomCopsNotOnScenarios(false)
+                SetCreateRandomCopsOnScenarios(false)
+                CancelCurrentPoliceReport()
+            end
+
+            -- Dispatch Services
+            if npc.disable_dispatch ~= false then
+                for i = 1, 15 do
+                    EnableDispatchService(i, false)
+                end
+            end
+
+            -- Special ambient vehicles
+            if npc.disable_garbage_trucks ~= false then
+                SetGarbageTrucks(false)
+            end
+
+            if npc.disable_random_boats ~= false then
+                SetRandomBoats(false)
+            end
         end
     end
 end)
