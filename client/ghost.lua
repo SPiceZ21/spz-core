@@ -1,46 +1,68 @@
-Citizen.CreateThread(function()
+-- client/ghost.lua
+-- No collision between players. Always. Everywhere. No conditions, no state.
+-- World collision (roads, buildings, props, NPC traffic) is untouched.
+--
+-- CRITICAL: SetEntityNoCollisionEntity(a, b, disableCollision) — the 3rd arg
+-- must be FALSE. false = collision disabled PERMANENTLY. true = disabled only
+-- until the two entities next separate, at which point it snaps back ON. With
+-- the "true" bug two overlapping cars stay ghosted but a third that briefly
+-- separates re-collides — the "2 players fine, 3rd collides" symptom.
+
+CreateThread(function()
     while true do
-        Wait(0)
-        local ped = PlayerPedId()
-        local veh = GetVehiclePedIsIn(ped, false)
+        local myPed = PlayerPedId()
+        local myVeh = GetVehiclePedIsIn(myPed, false)
+        local myId  = PlayerId()
 
-        -- REMOVE GHOST MODE (makes player transparent)
-        -- SetLocalPlayerAsGhost(ped, true)
-        -- if veh ~= 0 then
-        --     SetNetworkVehicleAsGhost(veh, true)
-        -- end
+        -- keep everyone fully opaque (no accidental ghost transparency)
+        SetEntityAlpha(myPed, 255, false)
+        if myVeh ~= 0 then SetEntityAlpha(myVeh, 255, false) end
 
-        -- FORCE FULL VISIBILITY (100%)
-        SetEntityAlpha(ped, 255, false)
-        if veh ~= 0 then
-            SetEntityAlpha(veh, 255, false)
-        end
+        for _, plr in ipairs(GetActivePlayers()) do
+            if plr ~= myId then
+                local tPed = GetPlayerPed(plr)
 
-        -- KEEP NO COLLISIONS ONLY (all player ped/vehicle combinations)
-        for _, player in ipairs(GetActivePlayers()) do
-            if player ~= PlayerId() then
-                local tp = GetPlayerPed(player)
-                if DoesEntityExist(tp) then
-                    -- 1. Local Ped vs Remote Ped
-                    SetEntityNoCollisionEntity(ped, tp, true)
+                if tPed ~= 0 and DoesEntityExist(tPed) then
+                    local tVeh = GetVehiclePedIsIn(tPed, false)
 
-                    local tv = GetVehiclePedIsIn(tp, false)
-                    -- 2. Local Ped vs Remote Vehicle
-                    if DoesEntityExist(tv) and tv ~= 0 then
-                        SetEntityNoCollisionEntity(ped, tv, true)
+                    -- ── Kill collision on the remote entities outright ──
+                    -- Pairwise flags don't bind the entity OWNER's physics;
+                    -- turning collision fully off on the remote copy removes
+                    -- every impulse locally. Skip the car WE ride in (would
+                    -- drop through the world on our screen).
+                    SetEntityCollision(tPed, false, false)
+                    if tVeh ~= 0 and tVeh ~= myVeh then
+                        SetEntityCollision(tVeh, false, false)
                     end
 
-                    if DoesEntityExist(veh) and veh ~= 0 then
-                        -- 3. Local Vehicle vs Remote Ped (free ped)
-                        SetEntityNoCollisionEntity(veh, tp, true)
+                    -- ── Pairwise, both directions, PERMANENT (3rd arg false) ──
+                    SetEntityNoCollisionEntity(myPed, tPed, false)
+                    SetEntityNoCollisionEntity(tPed, myPed, false)
 
-                        -- 4. Local Vehicle vs Remote Vehicle
-                        if DoesEntityExist(tv) and tv ~= 0 then
-                            SetEntityNoCollisionEntity(veh, tv, true)
+                    if myVeh ~= 0 then
+                        SetEntityNoCollisionEntity(myVeh, tPed, false)
+                        SetEntityNoCollisionEntity(tPed, myVeh, false)
+                    end
+
+                    if tVeh ~= 0 then
+                        SetEntityNoCollisionEntity(myPed, tVeh, false)
+                        SetEntityNoCollisionEntity(tVeh, myPed, false)
+
+                        if myVeh ~= 0 then
+                            SetEntityNoCollisionEntity(myVeh, tVeh, false)
+                            SetEntityNoCollisionEntity(tVeh, myVeh, false)
                         end
+                    end
+
+                    -- ── Camera ignores them too (no cam shove/clip) ─────
+                    DisableCamCollisionForObject(tPed)
+                    if tVeh ~= 0 then
+                        DisableCamCollisionForObject(tVeh)
                     end
                 end
             end
         end
+
+        Wait(0)
     end
 end)
