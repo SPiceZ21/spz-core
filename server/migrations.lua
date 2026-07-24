@@ -14,6 +14,7 @@ local MIGRATIONS = {
     "005_track_sectors.sql",
     "006_racelines.sql",
     "007_nation_racenumber.sql",
+    "008_rivals.sql",
 }
 
 SPZ = SPZ or {}
