@@ -8,15 +8,29 @@
 -- the "true" bug two overlapping cars stay ghosted but a third that briefly
 -- separates re-collides — the "2 players fine, 3rd collides" symptom.
 
+local LastPed, LastVeh = 0, 0
+
 CreateThread(function()
     while true do
         local myPed = PlayerPedId()
         local myVeh = GetVehiclePedIsIn(myPed, false)
         local myId  = PlayerId()
 
-        -- keep everyone fully opaque (no accidental ghost transparency)
-        SetEntityAlpha(myPed, 255, false)
-        if myVeh ~= 0 then SetEntityAlpha(myVeh, 255, false) end
+        -- Restore fully opaque rendering. NOTE: never use SetEntityAlpha(e,255)
+        -- here — setting an explicit alpha (even 255) flags the entity as
+        -- alpha-blended and moves it into GTA's TRANSPARENT render pass, where
+        -- it stops writing depth. Result: you see NPC headlight coronas and
+        -- other cars straight through the bodywork. ResetEntityAlpha clears the
+        -- override and puts the entity back in the opaque pass.
+        -- Only fired when the entity changes: calling it every frame is waste.
+        if myPed ~= LastPed then
+            ResetEntityAlpha(myPed)
+            LastPed = myPed
+        end
+        if myVeh ~= LastVeh then
+            if myVeh ~= 0 then ResetEntityAlpha(myVeh) end
+            LastVeh = myVeh
+        end
 
         for _, plr in ipairs(GetActivePlayers()) do
             if plr ~= myId then
