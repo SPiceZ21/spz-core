@@ -39,17 +39,11 @@ CreateThread(function()
                 if tPed ~= 0 and DoesEntityExist(tPed) then
                     local tVeh = GetVehiclePedIsIn(tPed, false)
 
-                    -- ── Kill collision on the remote entities outright ──
-                    -- Pairwise flags don't bind the entity OWNER's physics;
-                    -- turning collision fully off on the remote copy removes
-                    -- every impulse locally. Skip the car WE ride in (would
-                    -- drop through the world on our screen).
-                    SetEntityCollision(tPed, false, false)
-                    if tVeh ~= 0 and tVeh ~= myVeh then
-                        SetEntityCollision(tVeh, false, false)
-                    end
-
-                    -- ── Pairwise, both directions, PERMANENT (3rd arg false) ──
+                    -- Pairwise no-collision ONLY. Never SetEntityCollision(remote,
+                    -- false) — that strips the entity's WORLD collision too, so
+                    -- their car sinks through the ground on our screen.
+                    -- SetEntityNoCollisionEntity disables collision only between
+                    -- the two entities, both directions, permanently (arg = false).
                     SetEntityNoCollisionEntity(myPed, tPed, false)
                     SetEntityNoCollisionEntity(tPed, myPed, false)
 
