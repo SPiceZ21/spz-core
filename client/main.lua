@@ -143,7 +143,6 @@ Citizen.CreateThread(function()
             for _, p in ipairs(peds) do
                 if DoesEntityExist(p) and not IsPedAPlayer(p) then
                     SetEntityLodDist(p, 1000)
-                    SetPedAoBlobRender(p, true)
                 end
             end
         end
