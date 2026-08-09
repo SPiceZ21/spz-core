@@ -61,11 +61,34 @@ CreateThread(function()
                             SetEntityNoCollisionEntity(tVeh, myVeh, false)
                         end
                     end
+                end
+            end
+        end
 
-                    -- ── Camera ignores them too (no cam shove/clip) ─────
-                    DisableCamCollisionForObject(tPed)
-                    if tVeh ~= 0 then
-                        DisableCamCollisionForObject(tVeh)
+        Wait(0)
+    end
+end)
+
+-- ── Dedicated camera-collision guard ─────────────────────────────────────────
+-- The gameplay camera still SWEEPS against other players' peds/cars even though
+-- bodies pass through — so it zooms/jerks when someone overlaps you. This runs
+-- in its own tight per-frame loop (never starved by the no-collision work above)
+-- and tells the camera to ignore every nearby remote player ped + vehicle. Must
+-- be re-asserted every frame; the flag only lasts one frame.
+CreateThread(function()
+    while true do
+        local myId  = PlayerId()
+        local myPos = GetEntityCoords(PlayerPedId())
+
+        for _, plr in ipairs(GetActivePlayers()) do
+            if plr ~= myId then
+                local tPed = GetPlayerPed(plr)
+                if tPed ~= 0 and DoesEntityExist(tPed) then
+                    -- Only bother with players close enough to affect the camera.
+                    if #(myPos - GetEntityCoords(tPed)) < 30.0 then
+                        DisableCamCollisionForObject(tPed)
+                        local tVeh = GetVehiclePedIsIn(tPed, false)
+                        if tVeh ~= 0 then DisableCamCollisionForObject(tVeh) end
                     end
                 end
             end
