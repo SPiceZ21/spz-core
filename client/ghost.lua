@@ -32,40 +32,45 @@ CreateThread(function()
             LastVeh = myVeh
         end
 
+        -- Collect every player's ped + vehicle once.
+        local ents = {}
         for _, plr in ipairs(GetActivePlayers()) do
-            if plr ~= myId then
-                local tPed = GetPlayerPed(plr)
+            local ped = GetPlayerPed(plr)
+            if ped ~= 0 and DoesEntityExist(ped) then
+                ents[#ents + 1] = { ped = ped, veh = GetVehiclePedIsIn(ped, false) }
+            end
+        end
 
-                if tPed ~= 0 and DoesEntityExist(tPed) then
-                    local tVeh = GetVehiclePedIsIn(tPed, false)
-
-                    -- Pairwise no-collision ONLY. Never SetEntityCollision(remote,
-                    -- false) — that strips the entity's WORLD collision too, so
-                    -- their car sinks through the ground on our screen.
-                    -- SetEntityNoCollisionEntity disables collision only between
-                    -- the two entities, both directions, permanently (arg = false).
-                    SetEntityNoCollisionEntity(myPed, tPed, false)
-                    SetEntityNoCollisionEntity(tPed, myPed, false)
-
-                    if myVeh ~= 0 then
-                        SetEntityNoCollisionEntity(myVeh, tPed, false)
-                        SetEntityNoCollisionEntity(tPed, myVeh, false)
-                    end
-
-                    if tVeh ~= 0 then
-                        SetEntityNoCollisionEntity(myPed, tVeh, false)
-                        SetEntityNoCollisionEntity(tVeh, myPed, false)
-
-                        if myVeh ~= 0 then
-                            SetEntityNoCollisionEntity(myVeh, tVeh, false)
-                            SetEntityNoCollisionEntity(tVeh, myVeh, false)
-                        end
-                    end
+        -- Disable collision between EVERY PAIR, not just me-vs-others. Otherwise
+        -- on my screen two OTHER players still crash into each other (and the same
+        -- on their screens). All pairs = everyone phases through everyone locally.
+        -- SetEntityNoCollisionEntity(a, b, false) is permanent + world collision
+        -- stays intact (never SetEntityCollision(remote,false) — that sinks cars).
+        local n = #ents
+        for i = 1, n do
+            local a = ents[i]
+            for j = i + 1, n do
+                local b = ents[j]
+                SetEntityNoCollisionEntity(a.ped, b.ped, false)
+                SetEntityNoCollisionEntity(b.ped, a.ped, false)
+                if a.veh ~= 0 then
+                    SetEntityNoCollisionEntity(a.veh, b.ped, false)
+                    SetEntityNoCollisionEntity(b.ped, a.veh, false)
+                end
+                if b.veh ~= 0 then
+                    SetEntityNoCollisionEntity(a.ped, b.veh, false)
+                    SetEntityNoCollisionEntity(b.veh, a.ped, false)
+                end
+                if a.veh ~= 0 and b.veh ~= 0 then
+                    SetEntityNoCollisionEntity(a.veh, b.veh, false)
+                    SetEntityNoCollisionEntity(b.veh, a.veh, false)
                 end
             end
         end
 
-        Wait(0)
+        -- Permanent flag → no need to hammer every frame; re-apply covers new
+        -- streams. Cheap even at 16 players (120 pairs).
+        Wait(200)
     end
 end)
 
