@@ -28,11 +28,12 @@ Config.NPCs = {
     enabled                = true,          -- Master switch for ambient NPCs and traffic
     
     -- Density Multipliers (0.0 = none, 0.1 - 0.3 = low density, 0.5 = medium, 1.0 = full GTA default)
-    vehicle_density        = 0.4,          -- Ambient driving traffic density multiplier
-    random_vehicle_density = 0.4,          -- Random spawned traffic density multiplier
-    parked_vehicle_density = 0.4,          -- Parked cars along roads and parking lots density multiplier
-    ped_density            = 0.3,          -- Walking pedestrians density multiplier
-    scenario_ped_density   = 0.3,          -- Sitting / standing scenario peds density multiplier
+    -- Freeroam only — races use the poll (phase 3) traffic level instead.
+    vehicle_density        = 0.7,          -- Ambient driving traffic density multiplier
+    random_vehicle_density = 0.6,          -- Random spawned traffic density multiplier
+    parked_vehicle_density = 0.6,          -- Parked cars along roads and parking lots density multiplier
+    ped_density            = 0.6,          -- Walking pedestrians density multiplier
+    scenario_ped_density   = 0.5,          -- Sitting / standing scenario peds density multiplier
     ambient_vehicle_range  = 1.5,          -- Spawning range for ambient vehicles multiplier (stable long-distance stream)
     ambient_ped_range      = 1.5,          -- Spawning range for ambient peds multiplier (stable long-distance stream)
 
