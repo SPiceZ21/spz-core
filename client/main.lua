@@ -97,6 +97,17 @@ Citizen.CreateThread(function()
                 local vehRange      = npc.ambient_vehicle_range or 1.5
                 local pedRange      = npc.ambient_ped_range or 1.5
 
+                -- Inside a race, use the traffic level players voted for (poll
+                -- phase 3) instead of the freeroam density. The race bucket's
+                -- population is enabled server-side only for light/heavy.
+                if LocalPlayer.state.inRace then
+                    local lvl = GlobalState.raceTraffic or "none"
+                    local vd  = (lvl == "heavy" and 1.0) or (lvl == "light" and 0.3) or 0.0
+                    local pd  = (lvl == "heavy" and 0.4) or (lvl == "light" and 0.1) or 0.0
+                    vehDensity, randDensity, parkedDensity = vd, vd, vd
+                    pedDensity, scenPed = pd, pd
+                end
+
                 SetVehicleDensityMultiplierThisFrame(vehDensity)
                 SetRandomVehicleDensityMultiplierThisFrame(randDensity)
                 SetParkedVehicleDensityMultiplierThisFrame(parkedDensity)
