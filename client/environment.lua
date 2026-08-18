@@ -6,6 +6,15 @@
 local myWeather = nil          -- nil = follow server/default
 local myHour, myMinute = nil, nil
 
+-- All core notifications share one anchor (Config.notify_position).
+local function Notify(msg, ntype)
+    lib.notify({
+        description = msg,
+        type        = ntype or "info",
+        position    = (Config and Config.notify_position) or "center-left",
+    })
+end
+
 -- ── Apply loop ────────────────────────────────────────────────────────────────
 -- Personal override wins; otherwise everyone renders the server-synced
 -- baseline from GlobalState (set by spz-core/server/environment_sync.lua),
@@ -94,13 +103,13 @@ RegisterCommand("weather", function()
         ClearOverrideWeather()
         ClearWeatherTypePersist()
         _invalidateWeatherCache()   -- let the synced default re-apply
-        lib.notify({ description = "Weather reset to server default", type = "info" })
+        Notify("Weather reset to server default", "info")
         return
     end
 
     myWeather = input[1]
     applyWeather()
-    lib.notify({ description = "Weather → " .. myWeather, type = "success" })
+    Notify("Weather → " .. myWeather, "success")
 end, false)
 
 -- ── /time — args ──────────────────────────────────────────────────────────────
@@ -121,7 +130,7 @@ local TIME_PRESETS = {
 
 RegisterCommand("time", function(_, args)
     if not args[1] then
-        lib.notify({ description = "Usage: /time <morning|evening|night|...> | <hour> [min] | reset", type = "inform" })
+        Notify("Usage: /time <morning|evening|night|...> | <hour> [min] | reset", "inform")
         return
     end
 
@@ -130,7 +139,7 @@ RegisterCommand("time", function(_, args)
     if a == "reset" then
         myHour, myMinute = nil, nil
         NetworkClearClockTimeOverride()
-        lib.notify({ description = "Time reset to server clock", type = "info" })
+        Notify("Time reset to server clock", "info")
         return
     end
 
@@ -140,7 +149,7 @@ RegisterCommand("time", function(_, args)
     else
         local hour = tonumber(args[1])
         if not hour then
-            lib.notify({ description = "Unknown time. Try: morning, noon, evening, night, or 0-23", type = "error" })
+            Notify("Unknown time. Try: morning, noon, evening, night, or 0-23", "error")
             return
         end
         myHour   = math.floor(hour) % 24
@@ -148,5 +157,5 @@ RegisterCommand("time", function(_, args)
     end
 
     NetworkOverrideClockTime(myHour, myMinute, 0)
-    lib.notify({ description = ("Time → %02d:%02d"):format(myHour, myMinute), type = "success" })
+    Notify(("Time → %02d:%02d"):format(myHour, myMinute), "success")
 end, false)
