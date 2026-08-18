@@ -14,6 +14,12 @@ Config.allowed_classes = {              -- Valid vehicle classes
     "Sports Classics", "Sports", "Super"
 }
 
+-- Notifications
+-- ox_lib notification anchor used by every spz-core notify call.
+-- 'top' | 'top-right' | 'top-left' | 'bottom' | 'bottom-right' | 'bottom-left'
+-- | 'center-right' | 'center-left'
+Config.notify_position = "center-left"
+
 -- Client Display Sync Settings
 Config.hud = {
     locale = "en",                      -- Language
