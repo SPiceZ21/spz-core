@@ -28,7 +28,14 @@ local function CreateSession(source, name, identifier)
         lastSeen   = os.time()
     }
     
-    -- Register to bucket 0
+    -- Register to bucket 0.
+    --
+    -- The session is created with bucket = 0, so this used to hit the "already
+    -- in this bucket" early-out and do nothing at all: the player was never
+    -- explicitly routed and never entered BucketRegistry[0].players. A source id
+    -- reused from someone who had been in a race bucket then kept that bucket,
+    -- which is how players ended up spawning into an empty race world.
+    SetPlayerRoutingBucket(source, 0)
     if exports["spz-core"].AssignPlayerToBucket then
         exports["spz-core"]:AssignPlayerToBucket(source, 0)
     end

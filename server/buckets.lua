@@ -97,27 +97,47 @@ exports("AssignPlayerToBucket", function(source, bucketId)
     
     local session = exports["spz-core"]:GetPlayerSession(source)
     if not session then return false end
-    
+
     local oldBucket = session.bucket
-    if oldBucket == bucketId then return true end -- Already in this bucket
-    
-    -- Remove from old bucket's player list
-    if BucketRegistry[oldBucket] then
-        arrayRemove(BucketRegistry[oldBucket].players, source)
+
+    -- The ENGINE is the source of truth, not session.bucket. Anything that calls
+    -- SetPlayerRoutingBucket directly (spz-spectate does, deliberately) leaves
+    -- the two out of sync; trusting the cached value then made this a no-op and
+    -- the player stayed stranded in someone else's bucket.
+    local realBucket = GetPlayerRoutingBucket(source)
+    local inSync     = (oldBucket == bucketId) and (realBucket == bucketId)
+
+    -- Registry membership is repaired even when the buckets already match, so a
+    -- player can never be routed correctly yet missing from players[] (which is
+    -- what left buckets looking "occupied" and blocked their cleanup).
+    local listed = false
+    for _, v in ipairs(BucketRegistry[bucketId].players) do
+        if v == source then listed = true break end
     end
-    
+
+    if inSync and listed then return true end
+
+    -- Remove from every other bucket's list, not just the cached one — drift
+    -- means the stale entry is not always where session.bucket says it is.
+    for id, b in pairs(BucketRegistry) do
+        if id ~= bucketId then arrayRemove(b.players, source) end
+    end
+
     -- Moving FiveM routing bucket (Ped and Player)
     SetPlayerRoutingBucket(source, bucketId)
     local ped = GetPlayerPed(source)
     if ped > 0 then
         SetEntityRoutingBucket(ped, bucketId)
     end
-    
-    -- Register to new bucket
-    table.insert(BucketRegistry[bucketId].players, source)
+
+    if not listed then
+        table.insert(BucketRegistry[bucketId].players, source)
+    end
     session.bucket = bucketId
-    
-    TriggerEvent(SPZ.Events.BUCKET_CHANGED, source, oldBucket, bucketId)
+
+    if oldBucket ~= bucketId then
+        TriggerEvent(SPZ.Events.BUCKET_CHANGED, source, oldBucket, bucketId)
+    end
     return true
 end)
 
@@ -134,8 +154,12 @@ local function RemovePlayerFromBucket(source)
     end
     
     local oldBucket = session.bucket
-    if oldBucket == 0 then return true end -- Already in freeroam bucket
-    
+
+    -- Same trap as AssignPlayerToBucket: session.bucket can claim freeroam while
+    -- the engine still has them elsewhere, so check the real bucket too before
+    -- deciding there is nothing to do.
+    if oldBucket == 0 and GetPlayerRoutingBucket(source) == 0 then return true end
+
     -- Assign to Bucket 0 (freeroam)
     exports["spz-core"]:AssignPlayerToBucket(source, 0)
     
@@ -170,3 +194,68 @@ AddEventHandler("SPZ:playerDisconnected", function(source)
     -- As a fallback if for any reason they weren't fully cleared out of bucket 0
     arrayRemove(BucketRegistry[0].players, tonumber(source))
 end)
+
+-- ── Reconciliation ───────────────────────────────────────────────────────────
+-- Buckets are written from several resources (races, TT, minigames, spectate),
+-- and any raw SetPlayerRoutingBucket call drifts from this registry. Rather than
+-- trusting every caller, sweep periodically: the ENGINE is authoritative for
+-- where a player is, and the registry is repaired to match.
+--
+-- This is what stops a player being "spawned in a different bucket" — a stale
+-- entry can no longer survive longer than one sweep.
+CreateThread(function()
+    while true do
+        Wait(15000)
+
+        for _, sid in ipairs(GetPlayers()) do
+            local src     = tonumber(sid)
+            local session = exports["spz-core"]:GetPlayerSession(src)
+
+            if session then
+                local real = GetPlayerRoutingBucket(src)
+
+                -- Routed into a bucket this registry does not know about (its
+                -- owner deleted it, or it was set raw): send them home.
+                if not BucketRegistry[real] then
+                    print(("^3[spz-core] Player %d in unknown bucket %d — returning to freeroam.^0")
+                        :format(src, real))
+                    exports["spz-core"]:AssignPlayerToBucket(src, 0)
+                elseif session.bucket ~= real then
+                    print(("^3[spz-core] Bucket drift for player %d: session=%s engine=%d — resyncing.^0")
+                        :format(src, tostring(session.bucket), real))
+                    session.bucket = real
+                    for id, b in pairs(BucketRegistry) do
+                        if id ~= real then arrayRemove(b.players, src) end
+                    end
+                    local listed = false
+                    for _, v in ipairs(BucketRegistry[real].players) do
+                        if v == src then listed = true break end
+                    end
+                    if not listed then table.insert(BucketRegistry[real].players, src) end
+                end
+            end
+        end
+
+        -- Drop players from bucket lists who are no longer connected, so empty
+        -- race buckets stop reporting occupants and can actually be deleted.
+        for _, b in pairs(BucketRegistry) do
+            for i = #b.players, 1, -1 do
+                if GetPlayerName(b.players[i]) == nil then table.remove(b.players, i) end
+            end
+        end
+    end
+end)
+
+-- Where is everyone, according to both the registry and the engine?
+RegisterCommand("spzbuckets", function(src)
+    if src ~= 0 and not IsPlayerAceAllowed(src, "spz.admin") then return end
+    print("^2[spz-core] Bucket registry:^0")
+    for id, b in pairs(BucketRegistry) do
+        print(("  [%d] %-16s players=%d"):format(id, b.label, #b.players))
+        for _, p in ipairs(b.players) do
+            local engine = GetPlayerName(p) and GetPlayerRoutingBucket(p) or -1
+            print(("      %-4s %-20s engine=%s%s"):format(p, GetPlayerName(p) or "(gone)",
+                engine, engine ~= id and "  <-- DRIFT" or ""))
+        end
+    end
+end, false)
