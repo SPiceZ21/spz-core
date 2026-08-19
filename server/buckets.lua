@@ -68,7 +68,7 @@ local function DeleteBucket(bucketId)
             table.insert(tempPlayers, playerSrc)
         end
         for _, playerSrc in ipairs(tempPlayers) do
-            local session = exports["spz-core"]:GetPlayerSession(playerSrc)
+            local session = SPZ.GetSessionRef(playerSrc)
             if session then
                 exports["spz-core"]:AssignPlayerToBucket(playerSrc, 0)
             else
@@ -95,7 +95,7 @@ exports("AssignPlayerToBucket", function(source, bucketId)
         return false
     end
     
-    local session = exports["spz-core"]:GetPlayerSession(source)
+    local session = SPZ.GetSessionRef(source)
     if not session then return false end
 
     local oldBucket = session.bucket
@@ -144,7 +144,7 @@ end)
 -- 6.4 RemovePlayerFromBucket
 local function RemovePlayerFromBucket(source)
     source = tonumber(source)
-    local session = exports["spz-core"]:GetPlayerSession(source)
+    local session = SPZ.GetSessionRef(source)
     if not session then
         -- Sweep registry as fallback to prevent disconnected players from lingering
         for id, b in pairs(BucketRegistry) do
@@ -182,7 +182,7 @@ end)
 
 -- Used by exports per the documentation
 exports("GetPlayerBucket", function(source)
-    local session = exports["spz-core"]:GetPlayerSession(source)
+    local session = SPZ.GetSessionRef(source)
     if not session then return 0 end
     return session.bucket
 end)
@@ -209,7 +209,7 @@ CreateThread(function()
 
         for _, sid in ipairs(GetPlayers()) do
             local src     = tonumber(sid)
-            local session = exports["spz-core"]:GetPlayerSession(src)
+            local session = SPZ.GetSessionRef(src)
 
             if session then
                 local real = GetPlayerRoutingBucket(src)
