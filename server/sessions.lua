@@ -16,6 +16,18 @@ exports("GetPlayerSession", function(source)
     return ActiveSessions[tonumber(source)]
 end)
 
+-- Direct, in-process accessor for the other spz-core server files.
+--
+-- Exports are serialised across the resource boundary — even for a resource
+-- calling itself — so the export above hands back a COPY. Writing to it (as the
+-- bucket registry does with session.bucket) silently changed nothing, which is
+-- why bucket state never persisted and the reconciler resynced the same player
+-- forever. Same Lua environment here, so this is the real table.
+SPZ = SPZ or {}
+function SPZ.GetSessionRef(source)
+    return ActiveSessions[tonumber(source)]
+end
+
 local function CreateSession(source, name, identifier)
     -- 4.1 Session Object
     ActiveSessions[source] = {
