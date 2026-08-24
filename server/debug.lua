@@ -6,22 +6,49 @@ SPZ = SPZ or {}
 -- Temporary boolean to handle the toggle command
 local DebugActive = exports["spz-core"]:GetConfig("debug") or false
 
--- Command to toggle at runtime
+-- Single "/spz <subcommand>" dispatcher. RegisterCommand only keeps the
+-- LAST registration for a given name — a second RegisterCommand("spz", ...)
+-- elsewhere would silently replace this whole handler, not add to it — so
+-- every "/spz ..." subcommand lives here, dispatching out to exports from
+-- the resource that actually owns that behaviour (config.lua, theme.lua).
+local function isAdmin(source)
+    return source == 0
+        or IsPlayerAceAllowed(source, "spz.dev")
+        or IsPlayerAceAllowed(source, "spz.admin")
+end
+
+local Subcommands = {}
+
+Subcommands["debug"] = function(source)
+    if not isAdmin(source) then print("^1[spz-core] Access Denied.^0"); return end
+    DebugActive = not DebugActive
+    print(string.format("^3[spz-core] Debug Mode toggled to: %s^0", tostring(DebugActive)))
+    -- Set an internal global switch for `shared/emitter.lua` compatibility
+    _G.DebugMode = DebugActive
+end
+
+Subcommands["reloadconfig"] = function(source)
+    if not isAdmin(source) then print("^1[spz-core] Access Denied.^0"); return end
+    exports["spz-core"]:ReloadConfig()
+    print("^2[spz-core] Config dynamically reloaded (structural keys ignored).^0")
+end
+
+Subcommands["reloadtheme"] = function(source)
+    if not isAdmin(source) then print("^1[spz-core] Access Denied.^0"); return end
+    exports["spz-core"]:ReloadTheme()
+    print("^2[spz-core] Theme reloaded from spz_theme_* convars and pushed to all clients.^0")
+end
+
 RegisterCommand("spz", function(source, args)
-    if args[1] == "debug" then
-        -- Ideally check `spz.dev` or `spz.admin` via permissions system
-        -- This basic permission check validates them until the full ACE wrapper operates
-        if source ~= 0 and not IsPlayerAceAllowed(source, "spz.dev") and not IsPlayerAceAllowed(source, "spz.admin") then
-            print("^1[spz-core] Access Denied.^0")
-            return
-        end
-        
-        DebugActive = not DebugActive
-        print(string.format("^3[spz-core] Debug Mode toggled to: %s^0", tostring(DebugActive)))
-        
-        -- We will notify connected modules and update the shared config
-        -- Set an internal global switch for `shared/emitter.lua` compatibility
-        _G.DebugMode = DebugActive 
+    local sub = args[1]
+    local handler = sub and Subcommands[sub]
+    if handler then
+        handler(source)
+    else
+        local names = {}
+        for name in pairs(Subcommands) do names[#names + 1] = name end
+        table.sort(names)
+        print("^3[spz-core] Usage: /spz <" .. table.concat(names, "|") .. ">^0")
     end
 end, true)
 

@@ -81,7 +81,7 @@ local function SyncConfigToClient(target)
         hud = ActiveConfig.hud,
         poll_duration = ActiveConfig.poll_duration
     }
-    
+
     if target == -1 then
         TriggerClientEvent("SPZ:clientConfig", -1, safeSubset)
     else
@@ -89,22 +89,17 @@ local function SyncConfigToClient(target)
     end
 end
 
+exports("ReloadConfig", function()
+    LoadAndMergeConfig(true)
+    SyncConfigToClient(-1)
+end)
+
 -- Send subset to new connecting clients
 AddEventHandler("SPZ:playerConnected", function(source)
     SyncConfigToClient(source)
 end)
 
--- 2.3 Hot-Reload
-RegisterCommand("spz", function(source, args)
-    if args[1] == "reloadconfig" then
-        -- Permission check mock (integrate with 7. Permissions fully later)
-        if source ~= 0 and not IsPlayerAceAllowed(source, "spz.admin") then
-            print("^1[spz-core] Access Denied.^0")
-            return
-        end
-        
-        LoadAndMergeConfig(true)
-        SyncConfigToClient(-1) -- Resync to all connected clients
-        print("^2[spz-core] Config dynamically reloaded (structural keys ignored).^0")
-    end
-end, true)
+-- 2.3 Hot-Reload — dispatched from the single "/spz" command in
+-- server/debug.lua (which loads after this file). Registering a second
+-- RegisterCommand("spz", ...) here would silently overwrite that one
+-- instead of adding to it, so this is exported and called from there.

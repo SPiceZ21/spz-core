@@ -22,6 +22,7 @@ server_scripts {
   'server/main.lua',
   'server/bootstrap.lua',
   'server/config.lua',
+  'server/theme.lua',
   'server/sessions.lua',
   'server/cache.lua',
   'server/buckets.lua',
@@ -37,6 +38,7 @@ server_scripts {
 client_scripts {
   'client/main.lua',
   'client/config_sync.lua',
+  'client/theme_sync.lua',
   'client/error_relay.lua',
   'client/environment.lua',
   'client/ghost.lua',
