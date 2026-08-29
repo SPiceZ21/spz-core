@@ -16,6 +16,11 @@ local MIGRATIONS = {
     "007_nation_racenumber.sql",
     "008_rivals.sql",
     "009_duels.sql",
+    "010_leaderboard_indexes.sql",
+    "011_crew_image.sql",
+    "012_crew_settings.sql",
+    "013_crew_invites.sql",
+    "014_crew_rivals.sql",
 }
 
 SPZ = SPZ or {}
