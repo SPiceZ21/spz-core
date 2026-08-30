@@ -9,6 +9,7 @@
 -- separates re-collides — the "2 players fine, 3rd collides" symptom.
 
 local LastPed, LastVeh = 0, 0
+local LastSig = nil       -- signature of the last processed entity set
 
 CreateThread(function()
     while true do
@@ -68,37 +69,111 @@ CreateThread(function()
             end
         end
 
-        -- Permanent flag → no need to hammer every frame; re-apply covers new
-        -- streams. Cheap even at 16 players (120 pairs).
-        Wait(200)
+        -- The flag is permanent per pair, so a steady field needs no re-work.
+        -- The one moment it DOES matter is the frame a car streams in: until
+        -- this pass runs, that pair still collides. A flat 200 ms window is ~11
+        -- metres of travel at racing speed — enough for one real hit on
+        -- stream-in, which reads as "ghosting randomly failed". So: when the
+        -- entity set changed (someone streamed in, swapped car, respawned),
+        -- come straight back round instead of sleeping the full interval.
+        local sig = table.concat({ n, ents[1] and ents[1].ped or 0, ents[n] and ents[n].ped or 0 }, ":")
+        for i = 1, n do sig = sig .. "," .. ents[i].ped .. "." .. ents[i].veh end
+
+        if sig ~= LastSig then
+            LastSig = sig
+            Wait(0)      -- set changed: re-assert immediately on the next frame
+        else
+            Wait(200)    -- steady state: cheap even at 16 players (120 pairs)
+        end
     end
 end)
 
 -- ── Dedicated camera-collision guard ─────────────────────────────────────────
--- The gameplay camera still SWEEPS against other players' peds/cars even though
--- bodies pass through — so it zooms/jerks when someone overlaps you. This runs
--- in its own tight per-frame loop (never starved by the no-collision work above)
--- and tells the camera to ignore every nearby remote player ped + vehicle. Must
--- be re-asserted every frame; the flag only lasts one frame.
-CreateThread(function()
-    while true do
-        local myId  = PlayerId()
-        local myPos = GetEntityCoords(PlayerPedId())
+-- Physics collision and CAMERA collision are separate systems.
+-- SetEntityNoCollisionEntity stops the cars touching; the chase camera still
+-- sweeps against the other car's bounds and gets shoved into/under your own
+-- vehicle as you pass through — the "camera drops when I go through someone"
+-- symptom. DisableCamCollisionForObject is the fix, but the flag lasts exactly
+-- one frame, so it must be re-asserted every frame for every entity.
+--
+-- Enumerating by PLAYER missed two cases that happen precisely when you are
+-- overlapping someone at speed:
+--
+--   1. GetVehiclePedIsIn(remotePed) returns 0 whenever the remote ped's seat
+--      state has not synced yet — mid-stream-in, or right after they enter a
+--      car. The ped got the flag, the two-tonne car around it did not.
+--   2. A ghosted vehicle with no player in it — driver disconnected, or a car
+--      left behind mid-race — is not any player's vehicle, so it was never
+--      covered at all.
+--
+-- Sweeping the vehicle pool catches both, and picks up every other ghosted
+-- entity (race ghost-bots, duel/raceline ghosts, checkpoint gate props) for
+-- free via GetEntityCollisionDisabled, because they all switch collision off.
+--
+-- The scan is the expensive half and does NOT need to run per frame — entities
+-- do not stream in and out in 16 ms. So the candidate list is rebuilt on an
+-- interval and only the (cheap) flag call runs every frame.
+local CamGhostRange   = 45.0    -- metres; comfortably past chase-cam reach
+local CamRescanMs     = 250
 
-        for _, plr in ipairs(GetActivePlayers()) do
-            if plr ~= myId then
-                local tPed = GetPlayerPed(plr)
-                if tPed ~= 0 and DoesEntityExist(tPed) then
-                    -- Only bother with players close enough to affect the camera.
-                    if #(myPos - GetEntityCoords(tPed)) < 30.0 then
-                        DisableCamCollisionForObject(tPed)
-                        local tVeh = GetVehiclePedIsIn(tPed, false)
-                        if tVeh ~= 0 then DisableCamCollisionForObject(tVeh) end
-                    end
+local CamTargets = {}
+
+local function RebuildCamTargets()
+    local myPed = PlayerPedId()
+    local myVeh = GetVehiclePedIsIn(myPed, false)
+    local myPos = GetEntityCoords(myPed)
+    local out   = {}
+
+    -- Vehicles: any nearby car that is either player-driven or already ghosted.
+    -- NPC traffic is deliberately excluded — those cars really do collide, so
+    -- the camera should collide with them too.
+    for _, veh in ipairs(GetGamePool('CVehicle')) do
+        if veh ~= myVeh and DoesEntityExist(veh)
+        and #(myPos - GetEntityCoords(veh)) < CamGhostRange then
+            local ghosted = GetEntityCollisionDisabled(veh)
+            if not ghosted then
+                -- Any seat, not just the driver: a passenger still makes this a
+                -- player car, and the driver seat may not have synced yet.
+                for seat = -1, 3 do
+                    local ped = GetPedInVehicleSeat(veh, seat)
+                    if ped ~= 0 and IsPedAPlayer(ped) then ghosted = true break end
                 end
             end
+            if ghosted then out[#out + 1] = veh end
         end
+    end
 
+    -- Peds: remote players on foot.
+    local myId = PlayerId()
+    for _, plr in ipairs(GetActivePlayers()) do
+        if plr ~= myId then
+            local ped = GetPlayerPed(plr)
+            if ped ~= 0 and DoesEntityExist(ped)
+            and #(myPos - GetEntityCoords(ped)) < CamGhostRange then
+                out[#out + 1] = ped
+            end
+        end
+    end
+
+    CamTargets = out
+end
+
+CreateThread(function()
+    while true do
+        RebuildCamTargets()
+        Wait(CamRescanMs)
+    end
+end)
+
+CreateThread(function()
+    while true do
+        local targets = CamTargets
+        for i = 1, #targets do
+            local e = targets[i]
+            if DoesEntityExist(e) then
+                DisableCamCollisionForObject(e)
+            end
+        end
         Wait(0)
     end
 end)
