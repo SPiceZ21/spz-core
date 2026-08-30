@@ -21,6 +21,7 @@ local MIGRATIONS = {
     "012_crew_settings.sql",
     "013_crew_invites.sql",
     "014_crew_rivals.sql",
+    "015_rival_events.sql",
 }
 
 SPZ = SPZ or {}
