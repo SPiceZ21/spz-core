@@ -110,11 +110,23 @@ end)
 -- entity (race ghost-bots, duel/raceline ghosts, checkpoint gate props) for
 -- free via GetEntityCollisionDisabled, because they all switch collision off.
 --
--- The scan is the expensive half and does NOT need to run per frame — entities
--- do not stream in and out in 16 ms. So the candidate list is rebuilt on an
--- interval and only the (cheap) flag call runs every frame.
+-- Two passes, because they have different freshness requirements:
+--
+--   • PLAYERS are enumerated every frame. GetActivePlayers is bounded and cheap,
+--     and the handles are always current. This matters most in a RACE: cars
+--     close on each other and stream in at speed, and a cached list is stale by
+--     up to its rescan interval — 250 ms is ~14 m of closing at racing pace,
+--     which is exactly the pass-through where the camera drops. Caching this
+--     pass was a regression on the case the guard exists for.
+--
+--   • The POOL SWEEP is throttled. It exists for the entities player
+--     enumeration cannot see — a ghosted car with nobody in it, a remote ped
+--     whose seat has not synced, race ghost-bots, duel and raceline ghosts,
+--     checkpoint gate props (all of which switch collision off, so
+--     GetEntityCollisionDisabled finds them). None of those appear and close in
+--     under a tenth of a second.
 local CamGhostRange   = 45.0    -- metres; comfortably past chase-cam reach
-local CamRescanMs     = 250
+local CamRescanMs     = 150
 
 local CamTargets = {}
 
@@ -143,18 +155,6 @@ local function RebuildCamTargets()
         end
     end
 
-    -- Peds: remote players on foot.
-    local myId = PlayerId()
-    for _, plr in ipairs(GetActivePlayers()) do
-        if plr ~= myId then
-            local ped = GetPlayerPed(plr)
-            if ped ~= 0 and DoesEntityExist(ped)
-            and #(myPos - GetEntityCoords(ped)) < CamGhostRange then
-                out[#out + 1] = ped
-            end
-        end
-    end
-
     CamTargets = out
 end
 
@@ -167,6 +167,27 @@ end)
 
 CreateThread(function()
     while true do
+        local myId  = PlayerId()
+        local myPed = PlayerPedId()
+        local myPos = GetEntityCoords(myPed)
+
+        -- Pass 1 — every remote player, resolved fresh this frame. A racer who
+        -- streamed in since the last sweep is covered on the frame they appear,
+        -- not up to a sweep later.
+        for _, plr in ipairs(GetActivePlayers()) do
+            if plr ~= myId then
+                local ped = GetPlayerPed(plr)
+                if ped ~= 0 and DoesEntityExist(ped)
+                and #(myPos - GetEntityCoords(ped)) < CamGhostRange then
+                    DisableCamCollisionForObject(ped)
+                    local veh = GetVehiclePedIsIn(ped, false)
+                    if veh ~= 0 then DisableCamCollisionForObject(veh) end
+                end
+            end
+        end
+
+        -- Pass 2 — the throttled sweep's findings: ghosted entities and cars
+        -- whose occupancy the frame above could not resolve.
         local targets = CamTargets
         for i = 1, #targets do
             local e = targets[i]
@@ -174,6 +195,7 @@ CreateThread(function()
                 DisableCamCollisionForObject(e)
             end
         end
+
         Wait(0)
     end
 end)
