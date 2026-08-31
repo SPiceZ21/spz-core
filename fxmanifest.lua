@@ -44,6 +44,7 @@ client_scripts {
   'client/ghost.lua',
   'client/fade.lua',
   'client/commands.lua',
+  'client/radial.lua',
   'client/nui_guard.lua',
 }
 
