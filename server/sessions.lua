@@ -64,7 +64,18 @@ exports("GetAllSessions", function()
 end)
 
 -- 4.2 Connect Handler
--- Uses FiveM deferrals to hold the connection until the DB resolves
+--
+-- The deferral is the one place where a player can be held before they exist in
+-- the session, so it is the only correct place to load their profile: fail here
+-- and they get a real reason on the connection screen instead of joining and
+-- discovering there is no profile behind them.
+--
+-- This used to call deferrals.done() immediately with a comment saying the DB
+-- lookup was still to be written, while spz-identity did the lookup afterwards
+-- against a `deferrals` argument it was never actually passed. So nothing gated
+-- the connection, and a slow database meant the player joined before their
+-- profile existed — the "No profile found" path that left them in the menu
+-- request loop forever.
 AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
     local source = source
     deferrals.defer()
@@ -78,8 +89,30 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
         return
     end
 
-    -- Pseudo-DB lookup: Insert or retrieve player records... 
-    -- For now, continue assuming DB resolve succeeds:
+    -- spz-identity owns player data; spz-core does not depend on it existing.
+    -- If it is not running, let the player in — a server without identity is a
+    -- degraded server, not a closed one.
+    if GetResourceState('spz-identity') ~= 'started' then
+        deferrals.done()
+        return
+    end
+
+    deferrals.update("Loading your driver profile...")
+
+    local ok, result = pcall(function()
+        return exports['spz-identity']:PrepareProfile(identifier)
+    end)
+
+    if not ok then
+        print(("^1[spz-core] Profile preparation errored for %s: %s^7"):format(tostring(name), tostring(result)))
+        deferrals.done("Could not load your driver profile. Please try again.")
+        return
+    end
+
+    if not result or not result.ok then
+        deferrals.done((result and result.reason) or "Could not load your driver profile. Please try again.")
+        return
+    end
 
     deferrals.done()
 end)
