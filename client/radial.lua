@@ -128,6 +128,23 @@ local function RaceItems()
         end
     end
 
+    -- Raceline is a driving aid, not a minigame, and it is not a toggle: it owns
+    -- a ring of its own (line, ghost, ghost mode, settings) registered by
+    -- spz-raceline/client/panel.lua as `spz_rl_radial`.
+    --
+    -- It has to be pointed at from HERE. Rebuild() below calls
+    -- lib.clearRadialItems(), which drops every ROOT item in ox_lib — including
+    -- the one spz-raceline adds for itself — so a resource that adds its own
+    -- root entry loses it the next time race state changes. Submenus registered
+    -- with lib.registerRadial survive; only root items are cleared. So the
+    -- submenu stays theirs and the root entry lives in this list.
+    if Has('spz-raceline') then
+        items[#items + 1] = {
+            id = 'race_raceline', icon = 'route', label = 'Raceline',
+            menu = 'spz_rl_radial',
+        }
+    end
+
     if Has('spz-spectate') then
         if not racing and not trial then
             items[#items + 1] = {
@@ -173,13 +190,6 @@ local function MinigameItems()
                 if not input or not input[1] then return end
                 ExecuteCommand(('duel %d'):format(math.floor(input[1])))
             end,
-        }
-    end
-
-    if Has('spz-raceline') then
-        items[#items + 1] = {
-            id = 'mg_raceline', icon = 'route', label = 'Racing Line',
-            onSelect = Run('racelinetoggle'),
         }
     end
 
