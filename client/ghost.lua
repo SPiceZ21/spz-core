@@ -8,14 +8,71 @@
 -- the "true" bug two overlapping cars stay ghosted but a third that briefly
 -- separates re-collides — the "2 players fine, 3rd collides" symptom.
 
+--
+-- ── Cadence ──────────────────────────────────────────────────────────────────
+--
+-- The flag is nominally permanent per pair, and the previous version leaned on
+-- that: assert everything, then sleep 200 ms. It does not hold. The exclusion
+-- is dropped whenever an entity is re-created (stream out and back in), when
+-- network ownership migrates, and whenever anything calls SetEntityCollision on
+-- one of the pair — which spz-spawn does after every spawn and spz-appearance
+-- after every outfit change. None of those alter the entity HANDLE, so the old
+-- signature check could not see them; it only shortened the sleep when a handle
+-- appeared or disappeared.
+--
+-- A 200 ms hole is ~11 metres of closing at racing speed. That is one real hit,
+-- and it reads exactly as "ghosting randomly failed".
+--
+-- So the work is split by who actually needs it, the same way the camera guard
+-- below is split:
+--
+--   NEAR PASS, every frame — my ped and my car against every nearby player.
+--     This is the only set whose physics I simulate, so it is the only set
+--     where a missing flag can throw ME. It is 2 x 2n calls: trivial.
+--
+--   FULL PASS, throttled — every remaining pair, including remote-vs-remote.
+--     Worth doing, but not per frame, because I do not simulate contact between
+--     two cars someone else owns; I replay the positions their owner sends me.
+--     If their clients ghosted correctly they never touch, and if one did not,
+--     no flag of mine changes what I am shown. This pass is here for the cases
+--     where I DO own something — an orphaned car, a vehicle I created — and as
+--     cover while a remote client is still starting up.
+--
+-- That second point is worth stating plainly, because it bounds what this file
+-- can fix: collision is resolved by the network OWNER. Ghosting is only ever as
+-- good as the worst-behaved client in the lobby.
+
+local NEAR_RANGE   = 70.0    -- metres; past any plausible contact this frame
+local FULL_SWEEP_MS = 400
+
 local LastPed, LastVeh = 0, 0
-local LastSig = nil       -- signature of the last processed entity set
+
+--- Both directions of every entity pairing between two players.
+local function Unlink(aPed, aVeh, bPed, bVeh)
+    SetEntityNoCollisionEntity(aPed, bPed, false)
+    SetEntityNoCollisionEntity(bPed, aPed, false)
+    if aVeh ~= 0 then
+        SetEntityNoCollisionEntity(aVeh, bPed, false)
+        SetEntityNoCollisionEntity(bPed, aVeh, false)
+    end
+    if bVeh ~= 0 then
+        SetEntityNoCollisionEntity(aPed, bVeh, false)
+        SetEntityNoCollisionEntity(bVeh, aPed, false)
+    end
+    if aVeh ~= 0 and bVeh ~= 0 then
+        SetEntityNoCollisionEntity(aVeh, bVeh, false)
+        SetEntityNoCollisionEntity(bVeh, aVeh, false)
+    end
+end
+
+-- ── Near pass: me against everyone close, every frame ────────────────────────
 
 CreateThread(function()
     while true do
+        local myId  = PlayerId()
         local myPed = PlayerPedId()
         local myVeh = GetVehiclePedIsIn(myPed, false)
-        local myId  = PlayerId()
+        local myPos = GetEntityCoords(myPed)
 
         -- Restore fully opaque rendering. NOTE: never use SetEntityAlpha(e,255)
         -- here — setting an explicit alpha (even 255) flags the entity as
@@ -33,7 +90,24 @@ CreateThread(function()
             LastVeh = myVeh
         end
 
-        -- Collect every player's ped + vehicle once.
+        for _, plr in ipairs(GetActivePlayers()) do
+            if plr ~= myId then
+                local ped = GetPlayerPed(plr)
+                if ped ~= 0 and DoesEntityExist(ped)
+                and #(myPos - GetEntityCoords(ped)) < NEAR_RANGE then
+                    Unlink(myPed, myVeh, ped, GetVehiclePedIsIn(ped, false))
+                end
+            end
+        end
+
+        Wait(0)
+    end
+end)
+
+-- ── Full pass: every pair, throttled ─────────────────────────────────────────
+
+CreateThread(function()
+    while true do
         local ents = {}
         for _, plr in ipairs(GetActivePlayers()) do
             local ped = GetPlayerPed(plr)
@@ -42,49 +116,17 @@ CreateThread(function()
             end
         end
 
-        -- Disable collision between EVERY PAIR, not just me-vs-others. Otherwise
-        -- on my screen two OTHER players still crash into each other (and the same
-        -- on their screens). All pairs = everyone phases through everyone locally.
-        -- SetEntityNoCollisionEntity(a, b, false) is permanent + world collision
-        -- stays intact (never SetEntityCollision(remote,false) — that sinks cars).
+        -- World collision stays intact throughout: never SetEntityCollision on
+        -- a remote entity, that sinks cars through the road.
         local n = #ents
         for i = 1, n do
-            local a = ents[i]
             for j = i + 1, n do
-                local b = ents[j]
-                SetEntityNoCollisionEntity(a.ped, b.ped, false)
-                SetEntityNoCollisionEntity(b.ped, a.ped, false)
-                if a.veh ~= 0 then
-                    SetEntityNoCollisionEntity(a.veh, b.ped, false)
-                    SetEntityNoCollisionEntity(b.ped, a.veh, false)
-                end
-                if b.veh ~= 0 then
-                    SetEntityNoCollisionEntity(a.ped, b.veh, false)
-                    SetEntityNoCollisionEntity(b.veh, a.ped, false)
-                end
-                if a.veh ~= 0 and b.veh ~= 0 then
-                    SetEntityNoCollisionEntity(a.veh, b.veh, false)
-                    SetEntityNoCollisionEntity(b.veh, a.veh, false)
-                end
+                local a, b = ents[i], ents[j]
+                Unlink(a.ped, a.veh, b.ped, b.veh)
             end
         end
 
-        -- The flag is permanent per pair, so a steady field needs no re-work.
-        -- The one moment it DOES matter is the frame a car streams in: until
-        -- this pass runs, that pair still collides. A flat 200 ms window is ~11
-        -- metres of travel at racing speed — enough for one real hit on
-        -- stream-in, which reads as "ghosting randomly failed". So: when the
-        -- entity set changed (someone streamed in, swapped car, respawned),
-        -- come straight back round instead of sleeping the full interval.
-        local sig = table.concat({ n, ents[1] and ents[1].ped or 0, ents[n] and ents[n].ped or 0 }, ":")
-        for i = 1, n do sig = sig .. "," .. ents[i].ped .. "." .. ents[i].veh end
-
-        if sig ~= LastSig then
-            LastSig = sig
-            Wait(0)      -- set changed: re-assert immediately on the next frame
-        else
-            Wait(200)    -- steady state: cheap even at 16 players (120 pairs)
-        end
+        Wait(FULL_SWEEP_MS)
     end
 end)
 
@@ -107,7 +149,7 @@ end)
 --      covered at all.
 --
 -- Sweeping the vehicle pool catches both, and picks up every other ghosted
--- entity (race ghost-bots, duel/raceline ghosts, checkpoint gate props) for
+-- entity (duel and raceline ghosts, checkpoint gate props) for
 -- free via GetEntityCollisionDisabled, because they all switch collision off.
 --
 -- Two passes, because they have different freshness requirements:
@@ -121,7 +163,7 @@ end)
 --
 --   • The POOL SWEEP is throttled. It exists for the entities player
 --     enumeration cannot see — a ghosted car with nobody in it, a remote ped
---     whose seat has not synced, race ghost-bots, duel and raceline ghosts,
+--     whose seat has not synced, duel and raceline ghosts,
 --     checkpoint gate props (all of which switch collision off, so
 --     GetEntityCollisionDisabled finds them). None of those appear and close in
 --     under a tenth of a second.
