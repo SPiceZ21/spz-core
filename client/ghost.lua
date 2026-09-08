@@ -64,6 +64,113 @@
 -- cadence is the only reliable answer, which is why both tiers re-assert
 -- unconditionally rather than trying to be clever about it.
 
+-- ── WHY THE PAIR FLAG IS NOT ENOUGH ──────────────────────────────────────────
+--
+-- Everything above describes making SetEntityNoCollisionEntity as timely as it
+-- can be. It is worth doing and it is still not sufficient, because the flag
+-- itself is the wrong shape for this problem:
+--
+--   * it is a property of a PAIR, so N racers need N(N-1)/2 of them held
+--     correctly on the right machines, continuously, forever;
+--   * it is dropped by things this script cannot observe — re-creation on
+--     stream-in, ownership migration, any SetEntityCollision call from another
+--     resource;
+--   * and it only binds the machine that holds it, which is why three drivers
+--     could each watch a different crash.
+--
+-- The engine has a purpose-built mechanism for exactly this, and it is the one
+-- GTA Online itself uses for passive mode: GHOSTING. A ghosted entity is a
+-- property of the ENTITY, not of a pair. It does not care how many other
+-- players are nearby, there is nothing to re-assert per opponent, and the state
+-- is network-synced rather than held independently on every machine.
+--
+-- So ghosting is the PRIMARY mechanism now, and the pair flags below stay as a
+-- backstop for anything it does not reach.
+--
+-- This is not a guess: cw-racingapp phases racers with exactly these two calls
+-- and no pair flags at all (client/main.lua, ghostPlayer/unGhostPlayer). Where
+-- this file differs from that reference, the difference is deliberate and the
+-- reason is written next to it.
+--
+-- SetGhostedEntityAlpha(255) is what keeps bodywork solid-looking: the ghost
+-- system renders ghosted entities translucent by default, which is right for
+-- passive mode in Los Santos and wrong for a race where every car is ghosted.
+-- (This is NOT the same call as SetEntityAlpha, which must never be used here
+-- for the depth-buffer reason documented further down.)
+
+local ENGINE_GHOST = true
+
+-- Opaque. NOT 255.
+--
+-- 254 is the value cw-racingapp uses for both its ghosted and un-ghosted state,
+-- and it is the one to copy: this alpha field is a 0-255 override and the top of
+-- the range is where "fully opaque" and "no override at all" become ambiguous.
+-- 254 is visually indistinguishable and unambiguous, which is the trade worth
+-- making for a value that has to survive other resources writing the same
+-- global.
+local GHOST_ALPHA = 254
+
+-- Native availability is checked rather than assumed: these are GTA Online
+-- natives and their presence depends on the game build. If they are missing the
+-- pair flags below still run, and the log line says which mode is live so a
+-- silent downgrade cannot be mistaken for a working one.
+local HasGhostNatives =
+    type(SetLocalPlayerAsGhost) == "function" and
+    type(SetGhostedEntityAlpha) == "function"
+
+CreateThread(function()
+    Wait(1000)
+    if not ENGINE_GHOST then
+        print("^3[phasing] engine ghosting disabled by config — pair flags only^7")
+    elseif HasGhostNatives then
+        print("^2[phasing] engine ghosting active (+ pair flags as backstop)^7")
+    else
+        print("^1[phasing] engine ghosting natives unavailable — pair flags only^7")
+    end
+end)
+
+-- One call covers the player AND the car they are driving. There is deliberately
+-- no SetNetworkVehicleAsGhost here: ghosting the local player already carries
+-- the vehicle, which is why the reference implementations only ever make this
+-- one call and simply stop making it when the player is not the driver.
+--
+-- A PASSENGER is un-ghosted for that reason. The car belongs to whoever is in
+-- the driver's seat and they are already ghosting it; a passenger asserting a
+-- second, independent ghost state over the same vehicle is two writers on one
+-- value, and the resulting flicker looks exactly like ghosting failing at random.
+CreateThread(function()
+    local ghosted = nil     -- nil = never set, so the first pass always writes
+
+    while true do
+        if ENGINE_GHOST and HasGhostNatives then
+            local ped  = PlayerPedId()
+            local veh  = GetVehiclePedIsIn(ped, false)
+            local want = (veh == 0) or (GetPedInVehicleSeat(veh, -1) == ped)
+
+            -- Re-asserted every pass rather than only on change: the alpha is a
+            -- global other resources also write, and the ghost flag is dropped
+            -- by respawns and model changes without anything telling us.
+            if want then
+                SetLocalPlayerAsGhost(true)
+                SetGhostedEntityAlpha(GHOST_ALPHA)
+            elseif ghosted ~= false then
+                SetLocalPlayerAsGhost(false)
+                SetGhostedEntityAlpha(GHOST_ALPHA)
+            end
+
+            ghosted = want
+        end
+
+        Wait(200)
+    end
+end)
+
+-- Leave nobody stuck as a ghost if this resource stops mid-session.
+AddEventHandler("onResourceStop", function(res)
+    if res ~= GetCurrentResourceName() then return end
+    if HasGhostNatives then SetLocalPlayerAsGhost(false) end
+end)
+
 local FULL_SWEEP_MS = 150    -- tier 2 cadence
 local LastPed, LastVeh = 0, 0
 
@@ -199,6 +306,9 @@ end)
 RegisterCommand("phasing", function()
     local myId = PlayerId()
     print(("^2[phasing] me = player %d^7"):format(myId))
+    print(("^2[phasing] engine ghosting: %s^7"):format(
+        (not ENGINE_GHOST) and "off (config)"
+        or (HasGhostNatives and "ON" or "UNAVAILABLE - natives missing")))
 
     for _, plr in ipairs(GetActivePlayers()) do
         local ped = GetPlayerPed(plr)
@@ -223,8 +333,18 @@ end, false)
 -- SetEntityNoCollisionEntity stops the cars touching; the chase camera still
 -- sweeps against the other car's bounds and gets shoved into/under your own
 -- vehicle as you pass through — the "camera drops when I go through someone"
--- symptom. DisableCamCollisionForObject is the fix, but the flag lasts exactly
--- one frame, so it must be re-asserted every frame for every entity.
+-- symptom.
+--
+-- There are TWO natives for this and the wrong one was being called. The code
+-- used DisableCamCollisionForObject on peds and vehicles — an OBJECT, in GTA's
+-- vocabulary, is a prop, and a car is not one. DisableCamCollisionForEntity is
+-- the variant that takes any entity, and it is the one that has to be called for
+-- a player's ped and their vehicle. Both are called below: the entity variant
+-- because it is correct, the object variant because it costs one native and
+-- covers the prop case for the gate models the sweep also picks up.
+--
+-- The flag is per frame either way, so it is re-asserted every frame for every
+-- entity.
 --
 -- Enumerating by PLAYER missed two cases that happen precisely when you are
 -- overlapping someone at speed:
@@ -255,6 +375,28 @@ end, false)
 --     checkpoint gate props (all of which switch collision off, so
 --     GetEntityCollisionDisabled finds them). None of those appear and close in
 --     under a tenth of a second.
+-- Both variants, guarded. Which one a given build exposes is not something to
+-- assume, and a missing native here fails silently — which is precisely how a
+-- camera guard ends up looking like it works while doing nothing at all.
+local HasCamEntity = type(DisableCamCollisionForEntity) == "function"
+local HasCamObject = type(DisableCamCollisionForObject) == "function"
+
+local function NoCamCollision(e)
+    if HasCamEntity then DisableCamCollisionForEntity(e) end
+    if HasCamObject then DisableCamCollisionForObject(e) end
+end
+
+CreateThread(function()
+    Wait(1000)
+    if not (HasCamEntity or HasCamObject) then
+        print("^1[phasing] no cam-collision native available — the chase camera WILL catch on other cars^7")
+    elseif not HasCamEntity then
+        print("^3[phasing] cam collision: object variant only (entity variant missing)^7")
+    end
+end)
+
+local HasGhostQuery = type(NetworkIsEntityGhostedToLocalPlayer) == "function"
+
 local CamGhostRange   = 45.0    -- metres; comfortably past chase-cam reach
 local CamRescanMs     = 150
 
@@ -272,7 +414,15 @@ local function RebuildCamTargets()
     for _, veh in ipairs(GetGamePool('CVehicle')) do
         if veh ~= myVeh and DoesEntityExist(veh)
         and #(myPos - GetEntityCoords(veh)) < CamGhostRange then
+            -- Engine-ghosted entities do NOT report collision as disabled:
+            -- ghosting and SetEntityCollision are different systems, and now
+            -- that ghosting is the primary mechanism this sweep lost the signal
+            -- it used to find player cars by. Ask the ghost system directly
+            -- as well.
             local ghosted = GetEntityCollisionDisabled(veh)
+            if not ghosted and HasGhostQuery then
+                ghosted = NetworkIsEntityGhostedToLocalPlayer(veh)
+            end
             if not ghosted then
                 -- Any seat, not just the driver: a passenger still makes this a
                 -- player car, and the driver seat may not have synced yet.
@@ -309,9 +459,9 @@ CreateThread(function()
                 local ped = GetPlayerPed(plr)
                 if ped ~= 0 and DoesEntityExist(ped)
                 and #(myPos - GetEntityCoords(ped)) < CamGhostRange then
-                    DisableCamCollisionForObject(ped)
+                    NoCamCollision(ped)
                     local veh = GetVehiclePedIsIn(ped, false)
-                    if veh ~= 0 then DisableCamCollisionForObject(veh) end
+                    if veh ~= 0 then NoCamCollision(veh) end
                 end
             end
         end
@@ -322,7 +472,7 @@ CreateThread(function()
         for i = 1, #targets do
             local e = targets[i]
             if DoesEntityExist(e) then
-                DisableCamCollisionForObject(e)
+                NoCamCollision(e)
             end
         end
 
