@@ -102,13 +102,14 @@ local ENGINE_GHOST = true
 
 -- Opaque. NOT 255.
 --
--- 254 is the value cw-racingapp uses for both its ghosted and un-ghosted state,
--- and it is the one to copy: this alpha field is a 0-255 override and the top of
--- the range is where "fully opaque" and "no override at all" become ambiguous.
--- 254 is visually indistinguishable and unambiguous, which is the trade worth
--- making for a value that has to survive other resources writing the same
--- global.
-local GHOST_ALPHA = 254
+-- 255: fully opaque, no trace of the ghost system's translucency.
+--
+-- cw-racingapp uses 254 for both its ghosted and un-ghosted state, on the
+-- reasoning that the very top of a 0-255 override range is where "fully opaque"
+-- and "no override at all" can blur together. The two are visually identical,
+-- so if ghosted cars ever render see-through, 254 is the first thing to try —
+-- but 255 is what is asked for here and it says exactly what it means.
+local GHOST_ALPHA = 255
 
 -- Native availability is checked rather than assumed: these are GTA Online
 -- natives and their presence depends on the game build. If they are missing the
