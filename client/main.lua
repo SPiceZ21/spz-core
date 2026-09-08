@@ -122,7 +122,15 @@ Citizen.CreateThread(function()
                 SetCreateRandomCops(false)
                 SetCreateRandomCopsNotOnScenarios(false)
                 SetCreateRandomCopsOnScenarios(false)
-                CancelCurrentPoliceReport()
+
+                -- ...but not the scanner, while spz-races has a pursuit running.
+                -- Cancelling every frame kills a police report on the frame it
+                -- starts, so the cop-chase radio would be silent no matter what
+                -- it asked for. The flag is set by that resource for exactly as
+                -- long as its own dispatch audio is wanted.
+                if not LocalPlayer.state.copHeat then
+                    CancelCurrentPoliceReport()
+                end
             end
 
             -- Dispatch Services
