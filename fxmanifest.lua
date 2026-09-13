@@ -46,6 +46,7 @@ client_scripts {
   'client/commands.lua',
   'client/radial.lua',
   'client/nui_guard.lua',
+  'client/tablet.lua',
 }
 
 dependencies {
