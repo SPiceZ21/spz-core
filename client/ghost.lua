@@ -92,24 +92,34 @@
 -- this file differs from that reference, the difference is deliberate and the
 -- reason is written next to it.
 --
--- SetGhostedEntityAlpha(255) is what keeps bodywork solid-looking: the ghost
--- system renders ghosted entities translucent by default, which is right for
--- passive mode in Los Santos and wrong for a race where every car is ghosted.
+-- SetGhostedEntityAlpha is what keeps bodywork solid-looking: the ghost system
+-- renders ghosted entities translucent by default, which is right for passive
+-- mode in Los Santos and wrong for a race where every car is ghosted. See
+-- GHOST_ALPHA below for the value and why it is not 255.
 -- (This is NOT the same call as SetEntityAlpha, which must never be used here
 -- for the depth-buffer reason documented further down.)
 
 local ENGINE_GHOST = true
 
--- Opaque. NOT 255.
+-- Opaque. 254, NOT 255 — and the file already predicted this.
 --
--- 255: fully opaque, no trace of the ghost system's translucency.
+-- 255 was here first, on the reasoning that it says exactly what it means:
+-- fully opaque, no trace of the ghost system's translucency. The note left
+-- beside it said that cw-racingapp uses 254 instead, because the very top of a
+-- 0-255 override range is where "fully opaque" and "no override at all" blur
+-- together, and that *if ghosted racers ever render see-through, 254 is the
+-- first thing to try*.
 --
--- cw-racingapp uses 254 for both its ghosted and un-ghosted state, on the
--- reasoning that the very top of a 0-255 override range is where "fully opaque"
--- and "no override at all" can blur together. The two are visually identical,
--- so if ghosted cars ever render see-through, 254 is the first thing to try —
--- but 255 is what is asked for here and it says exactly what it means.
-local GHOST_ALPHA = 255
+-- 2026-09-17: they did, so it is. The two values are visually identical when
+-- both work; 254 is unambiguously an override, which is the whole point of
+-- setting one.
+--
+-- This single value covers the PLAYER AND THE CAR. SetLocalPlayerAsGhost
+-- carries the vehicle with the ped (see the note above the toggle thread), and
+-- SetGhostedEntityAlpha applies to every ghosted entity rather than to one
+-- class of them — so there is no second call to make for the car, and adding
+-- one would be a second writer on the same value.
+local GHOST_ALPHA = 254
 
 -- Native availability is checked rather than assumed: these are GTA Online
 -- natives and their presence depends on the game build. If they are missing the
