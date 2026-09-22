@@ -6,10 +6,10 @@
 -- at once.
 --
 -- `setr` rather than `set` (which is what spz_discord_token uses, being a
--- secret): these are public colours, and the loading screen has to read them on
--- the client before any push could reach it — see spz-loading/client/main.lua.
--- Replicating them costs nothing here; GetConvar below reads a `setr` convar
--- server-side exactly as it read a `set` one.
+-- secret): these are public colours, and the loading screen is painted before
+-- any push from here could reach it, so it reads them off the client instead.
+-- `set` still works — spz-loading falls back to asking its own server script,
+-- which reads them through here. GetConvar below is unaffected either way.
 
 local DEFAULTS = {
     accent  = '#ff6200',   -- primary brand accent
