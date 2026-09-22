@@ -1,9 +1,15 @@
 -- server/theme.lua — Base UI theme, set from server.cfg convars.
--- Same pattern as spz_discord_token: `set spz_theme_accent "#ff6200"` in
--- server.cfg, no resource restart needed — /spz reloadtheme re-reads the
--- convars and re-pushes to every connected client. Every SPiceZ NUI reads
--- this via exports("spz-core", "GetTheme") and applies it as CSS variables
--- at runtime, so one config line re-skins every UI at once.
+-- `setr spz_theme_accent "#ff6200"` in server.cfg, no resource restart needed
+-- — /spz reloadtheme re-reads the convars and re-pushes to every connected
+-- client. Every SPiceZ NUI reads this via exports("spz-core", "GetTheme") and
+-- applies it as CSS variables at runtime, so one config line re-skins every UI
+-- at once.
+--
+-- `setr` rather than `set` (which is what spz_discord_token uses, being a
+-- secret): these are public colours, and the loading screen has to read them on
+-- the client before any push could reach it — see spz-loading/client/main.lua.
+-- Replicating them costs nothing here; GetConvar below reads a `setr` convar
+-- server-side exactly as it read a `set` one.
 
 local DEFAULTS = {
     accent  = '#ff6200',   -- primary brand accent
