@@ -3,7 +3,7 @@ game 'gta5'
 
 name 'spz-core'
 description 'SPiceZ-Core — Framework bootstrap, sessions, state machine, routing buckets'
-version '1.2.2'
+version '1.2.3'
 author 'SPiceZ-Core'
 
 shared_scripts {
