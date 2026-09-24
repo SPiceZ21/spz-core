@@ -157,6 +157,8 @@ CreateThread(function()
             local ped  = PlayerPedId()
             local veh  = GetVehiclePedIsIn(ped, false)
             local want = (veh == 0) or (GetPedInVehicleSeat(veh, -1) == ped)
+            -- Contact modes (spz-pursuit) opt out: see Contact() below.
+            if LocalPlayer.state['spz:contact'] == true then want = false end
 
             -- Re-asserted every pass rather than only on change: the alpha is a
             -- global other resources also write, and the ghost flag is dropped
@@ -183,6 +185,18 @@ AddEventHandler("onResourceStop", function(res)
 end)
 
 local FULL_SWEEP_MS = 150    -- tier 2 cadence
+
+-- ── Contact opt-out ──────────────────────────────────────────────────────────
+-- A mode that needs real contact (spz-pursuit: cops boxing the robber in) sets
+-- the player statebag `spz:contact` for everyone in its match. Two players who
+-- BOTH carry it are left to collide; every other pair is phased as usual, so a
+-- contact player still passes through anyone who is not in the same mode (they
+-- are in their own bucket anyway). Pair exclusions already set on a ped are
+-- dropped by the mode calling SetEntityCollision; its cars are spawned fresh.
+local function Contact(plr)
+    local st = Player(GetPlayerServerId(plr)).state
+    return st and st['spz:contact'] == true
+end
 local LastPed, LastVeh = 0, 0
 
 --- Both directions of every entity pairing between two players. Both directions
@@ -231,7 +245,7 @@ local function Snapshot()
                 end
             end
 
-            out[#out + 1] = { ped = ped, veh = veh, mine = mine }
+            out[#out + 1] = { ped = ped, veh = veh, mine = mine, contact = Contact(plr) }
         end
     end
 
@@ -271,7 +285,7 @@ CreateThread(function()
             local a = ents[i]
             for j = i + 1, n do
                 local b = ents[j]
-                if a.mine or b.mine then
+                if (a.mine or b.mine) and not (a.contact and b.contact) then
                     Unlink(a.ped, a.veh, b.ped, b.veh)
                 end
             end
@@ -296,7 +310,7 @@ CreateThread(function()
             for j = i + 1, n do
                 local b = ents[j]
                 -- Tier 1 has these covered every frame already.
-                if not (a.mine or b.mine) then
+                if not (a.mine or b.mine) and not (a.contact and b.contact) then
                     Unlink(a.ped, a.veh, b.ped, b.veh)
                 end
             end
