@@ -306,6 +306,21 @@ local function Rebuild()
         end
     end
 
+    -- In a minigame: one root button to leave it (same as the Esc menu row).
+    local game = LocalPlayer.state.inMinigame
+    if type(game) == 'string' and game ~= '' and not InRace() then
+        table.insert(root, 1, {
+            id = 'minigame_leave', icon = 'right-from-bracket', label = 'Leave Minigame',
+            onSelect = function()
+                local ok = lib.alertDialog({
+                    header = 'Leave ' .. game, content = 'You will forfeit this round. Continue?',
+                    centered = true, cancel = true,
+                })
+                if ok == 'confirm' then TriggerEvent('spz:leaveMinigame') end
+            end,
+        })
+    end
+
     lib.clearRadialItems()
     if #root > 0 then lib.addRadialItem(root) end
 end
@@ -326,6 +341,7 @@ for _, key in ipairs({ 'inRace', 'inQueue', 'pendingRace' }) do
     AddStateBagChangeHandler(key, ('player:%s'):format(GetPlayerServerId(PlayerId())), Schedule)
 end
 
+AddEventHandler('spz:minigameChanged', Schedule)
 RegisterNetEvent('SPZ:tt:Begin', Schedule)
 RegisterNetEvent('SPZ:tt:End', Schedule)
 
