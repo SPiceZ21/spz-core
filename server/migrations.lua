@@ -24,6 +24,8 @@ local MIGRATIONS = {
     "015_rival_events.sql",
     "016_race_number_range.sql",
     "017_player_plate.sql",
+    "018_grafana_poll_history.sql",
+    "019_race_incidents.sql",
 }
 
 SPZ = SPZ or {}
