@@ -26,6 +26,8 @@ local MIGRATIONS = {
     "017_player_plate.sql",
     "018_grafana_poll_history.sql",
     "019_race_incidents.sql",
+    "020_player_discord.sql",
+    "021_race_replays.sql",
 }
 
 SPZ = SPZ or {}
