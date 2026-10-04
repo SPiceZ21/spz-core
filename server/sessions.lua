@@ -76,6 +76,12 @@ end)
 -- the connection, and a slow database meant the player joined before their
 -- profile existed — the "No profile found" path that left them in the menu
 -- request loop forever.
+local function analyticsReject(src, reason)
+    if GetResourceState("spz-analytics") == "started" then
+        pcall(function() exports["spz-analytics"]:Reject(src, reason) end)
+    end
+end
+
 AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
     local source = source
     deferrals.defer()
@@ -85,6 +91,7 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
 
     local identifier = GetLicense(source)
     if not identifier then
+        analyticsReject(source, "no Rockstar license")
         deferrals.done("You must have a valid Rockstar License to join.")
         return
     end
@@ -105,11 +112,13 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
 
     if not ok then
         print(("^1[spz-core] Profile preparation errored for %s: %s^7"):format(tostring(name), tostring(result)))
+        analyticsReject(source, "profile error")
         deferrals.done("Could not load your driver profile. Please try again.")
         return
     end
 
     if not result or not result.ok then
+        analyticsReject(source, (result and result.reason) or "profile not ready")
         deferrals.done((result and result.reason) or "Could not load your driver profile. Please try again.")
         return
     end
