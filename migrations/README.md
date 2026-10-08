@@ -11,7 +11,8 @@ each, in the order its `MIGRATIONS` list gives, and records every one in the
 | `races/`     | Results, sectors, racelines, leaderboard indexes, replays | 002, 005, 006, 010, 021 |
 | `crews/`     | Crew image, settings, invites, crew rivals              | 011, 012, 013, 014 |
 | `rivals/`    | Rivals, duels, rival events                             | 008, 009, 015 |
-| `analytics/` | Grafana data: poll history, race incidents, sessions, activity, race funnel, laps, server snapshots, vehicle usage, feature usage, daily player stats, race entries (car / ping / FPS), race engine events, rating history, connection attempts, server events, entity counts, admin actions, daily credit balances (written by spz-analytics) | 018, 019, 022-037 |
+| `analytics/` | Grafana data: poll history, race incidents, sessions, activity, race funnel, laps, server snapshots, vehicle usage, feature usage, daily player stats, race entries (car / ping / FPS), race engine events, rating history, connection attempts, server events, entity counts, admin actions, daily credit balances, poll reroll votes (written by spz-analytics / spz-races) | 018, 019, 022-037, 039 |
+| `progression/` | Ranking v3: rank points on `players`, `rank_awards` ledger | 038 |
 
 ## Rules
 

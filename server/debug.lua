@@ -39,6 +39,25 @@ Subcommands["reloadtheme"] = function(source)
     print("^2[spz-core] Theme reloaded from spz_theme_* convars and pushed to all clients.^0")
 end
 
+-- Every spz-* resource, its state and version. (Replaces the old module
+-- registry, which no resource ever registered with.)
+Subcommands["status"] = function(source)
+    if not isAdmin(source) then print("^1[spz-core] Access Denied.^0"); return end
+    local rows = {}
+    for i = 0, GetNumResources() - 1 do
+        local res = GetResourceByFindIndex(i)
+        if res and res:sub(1, 4) == "spz-" then rows[#rows + 1] = res end
+    end
+    table.sort(rows)
+    print("^3--- SPiceZ status ---^0")
+    for _, res in ipairs(rows) do
+        local state = GetResourceState(res)
+        local icon = state == "started" and "^2OK^7" or "^1--^7"
+        print(("%s  %-22s %-9s v%s"):format(icon, res, state,
+            GetResourceMetadata(res, "version", 0) or "?"))
+    end
+end
+
 RegisterCommand("spz", function(source, args)
     local sub = args[1]
     local handler = sub and Subcommands[sub]
@@ -51,17 +70,4 @@ RegisterCommand("spz", function(source, args)
         print("^3[spz-core] Usage: /spz <" .. table.concat(names, "|") .. ">^0")
     end
 end, true)
-
--- 8.3 Client Error Relay (Server Receiver)
-AddEventHandler("SPZ:clientError", function(message, trace)
-    local source = source
-    local session = exports["spz-core"]:GetPlayerSession(source)
-    local identity = session and session.name or "Unknown ("..source..")"
-    
-    print(string.format("^1[CLIENT ERROR] Player: %s | Source: %s^0", identity, source))
-    print(string.format("^1[Message]^0 %s", tostring(message)))
-    if trace then
-        print(string.format("^3[Trace]^0\n%s", tostring(trace)))
-    end
-end)
 

@@ -5,26 +5,11 @@ Config = {}
 -- General
 Config.debug = false
 
--- Race Settings
-Config.intermission_time = 30           -- Time in seconds between races
-Config.max_players_per_race = 12        -- Maximum racers per routing bucket
-Config.poll_duration = 60               -- How long track voting lasts (seconds)
-Config.allowed_classes = {              -- Valid vehicle classes
-    "Compacts", "Coupes", "Muscle",
-    "Sports Classics", "Sports", "Super"
-}
-
 -- Notifications
 -- ox_lib notification anchor used by every spz-core notify call.
 -- 'top' | 'top-right' | 'top-left' | 'bottom' | 'bottom-right' | 'bottom-left'
 -- | 'center-right' | 'center-left'
 Config.notify_position = "center-left"
-
--- Client Display Sync Settings
-Config.hud = {
-    locale = "en",                      -- Language
-    display_units = "mph"               -- "mph" or "kmh"
-}
 
 -- Environment Control
 Config.disable_npcs = false                 -- Legacy flag: set to true to force completely 0 density for all NPCs
@@ -55,7 +40,6 @@ Config.NPCs = {
 
 -- Engine Anchors
 Config.SafeZone = { coords = vector3(-899.6, -2039.5, 9.4), heading = 45.0 }
-
 
 -- Synced Environment (server-authoritative defaults)
 -- Everyone sees the same time & weather unless they set a personal override

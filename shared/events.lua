@@ -12,5 +12,14 @@ SPZ.Events = {
   PLAYER_CONNECTED   = "SPZ:playerConnected",
   PLAYER_DISCONNECTED= "SPZ:playerDisconnected",
   CLIENT_CONFIG      = "SPZ:clientConfig",
-  CLIENT_ERROR       = "SPZ:clientError"
+
+  -- spz-progression (single emitter: spz-progression/server/main.lua and
+  -- server/rank_admin.lua). Fired once per race with every player's
+  -- before/after RP, rank, SR, iRating — analytics and feeds read this
+  -- instead of diffing profiles on a timer.
+  PROGRESSION_APPLIED = "SPZ:progressionApplied",
+  RANK_CHANGED        = "SPZ:rankChanged",
+  RANK_VOIDED         = "SPZ:rankVoided",
+  -- spz-identity (single emitter: UnlockLicense) — class letter went up.
+  LICENSE_UNLOCKED    = "SPZ:licenseUnlocked",
 }

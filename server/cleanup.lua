@@ -54,4 +54,3 @@ AddEventHandler("onResourceStop", function(resourceName)
     end
 end)
 
-exports("CleanupPlayer", CleanupPlayer)

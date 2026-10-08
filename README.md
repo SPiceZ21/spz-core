@@ -65,15 +65,13 @@ Add schema changes as a new numbered file. Never edit an applied one.
 
 | Group | Exports |
 |---|---|
-| Sessions | `CreateSession` · `GetPlayerSession` · `GetAllSessions` · `CleanupPlayer` |
-| Buckets | `CreateBucket` · `DeleteBucket` · `AssignPlayerToBucket` · `RemovePlayerFromBucket` · `GetPlayerBucket` · `GetBucketPlayers` · `GetBucketRegistry` · `SetContextBucket` |
-| State | `SetPlayerMode` · `IsPlayerInMode` · `GetPlayerContext` |
-| Modules | `RegisterModule` · `RequireModule` · `GetRegisteredModules` · `IsCoreReady` · `WaitForMigrations` · `GetVersion` |
-| Config / cache | `GetConfig` · `GetCache` · `SetCache` |
+| Sessions | `CreateSession` · `GetPlayerSession` · `GetAllSessions` |
+| Buckets | `CreateBucket` · `DeleteBucket` · `AssignPlayerToBucket` · `RemovePlayerFromBucket` · `GetPlayerBucket` · `GetBucketPlayers` · `GetBucketRegistry` |
+| Modules | `WaitForMigrations` · `GetVersion` |
+| Config | `GetConfig` |
 | Permissions | `HasPermission` · `IsAdmin` |
 | Environment | `SetSyncedTime` · `SetSyncedWeather` |
 | Fade (client) | `FadeIn` · `FadeOut` · `FadeHold` · `FadeTransition` |
-| Misc | `RegisterSPZCommand` · `RelayError` |
 
 ```lua
 local session = exports['spz-core']:GetPlayerSession(source)

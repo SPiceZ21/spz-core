@@ -59,4 +59,3 @@ function SPZ.RegisterCommand(name, aceRequired, handler)
 end
 
 -- Export the wrapper globally if other resources do not load `shared` functions manually.
-exports("RegisterSPZCommand", SPZ.RegisterCommand)

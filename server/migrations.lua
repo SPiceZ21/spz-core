@@ -53,6 +53,8 @@ local MIGRATIONS = {
     { "035_snapshot_entities.sql",       "analytics" },
     { "036_admin_actions.sql",           "analytics" },
     { "037_daily_credit_balances.sql",   "analytics" },
+    { "038_rank_points.sql",             "progression" },
+    { "039_poll_reroll_votes.sql",       "analytics" },
 }
 
 SPZ = SPZ or {}

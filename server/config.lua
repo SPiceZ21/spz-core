@@ -1,42 +1,13 @@
 local ActiveConfig = {}
-local StructuralKeys = { max_players_per_race = true }
+local StructuralKeys = {}   -- keys a hot-reload must not change (none today)
 
 local DefaultConfig = {
     debug = false,
-    intermission_time = 30,
-    max_players_per_race = 12,
-    poll_duration = 60,
-    allowed_classes = { "Compacts", "Coupes", "Muscle", "Sports Classics", "Sports", "Super" },
-    hud = { locale = "en", display_units = "mph" }
 }
 
 -- 2.2 Schema Validator
 local function ValidateConfig(cfg)
-    -- Check types & ranges, fallback to defaults and log ERROR if missing/wrong
-    if type(cfg.intermission_time) ~= "number" or cfg.intermission_time < 0 then
-        print("^1[spz-core] ERROR: Validation failed for 'intermission_time'. Falling back to default.^0")
-        cfg.intermission_time = DefaultConfig.intermission_time
-    end
-    
-    if type(cfg.max_players_per_race) ~= "number" or cfg.max_players_per_race < 1 then
-        print("^1[spz-core] ERROR: Validation failed for 'max_players_per_race'. Falling back to default.^0")
-        cfg.max_players_per_race = DefaultConfig.max_players_per_race
-    end
-
-    if type(cfg.poll_duration) ~= "number" or cfg.poll_duration < 10 then
-        print("^1[spz-core] ERROR: Validation failed for 'poll_duration'. Falling back to default.^0")
-        cfg.poll_duration = DefaultConfig.poll_duration
-    end
-
-    if type(cfg.allowed_classes) ~= "table" then
-        print("^1[spz-core] ERROR: Validation failed for 'allowed_classes'. Falling back to default.^0")
-        cfg.allowed_classes = DefaultConfig.allowed_classes
-    end
-    
-    if type(cfg.hud) ~= "table" then
-        cfg.hud = DefaultConfig.hud
-    end
-
+    if type(cfg.debug) ~= "boolean" then cfg.debug = DefaultConfig.debug end
     return cfg
 end
 
@@ -77,10 +48,9 @@ end)
 
 -- 2.4 Client Config Sync
 local function SyncConfigToClient(target)
-    local safeSubset = {
-        hud = ActiveConfig.hud,
-        poll_duration = ActiveConfig.poll_duration
-    }
+    -- Nothing in spz-core's config is needed client-side today; the event is
+    -- kept so GetConfig() on the client keeps working if a key is added.
+    local safeSubset = {}
 
     if target == -1 then
         TriggerClientEvent("SPZ:clientConfig", -1, safeSubset)
