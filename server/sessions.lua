@@ -149,3 +149,21 @@ AddEventHandler("playerDropped", function(reason)
         ActiveSessions[source] = nil
     end
 end)
+
+-- ── Player flags clients may set on themselves ───────────────────────────────
+-- sv_stateBagStrictMode blocks every client write to its own statebag, so
+-- `LocalPlayer.state:set(...)` from a minigame silently did nothing. These few
+-- flags are pure UI / comfort switches about the player themselves, so the
+-- client asks and the server writes (replicated, so every script sees it).
+--   inMinigame : display name of the minigame they're in, or false
+--   vehDamage  : true while a mode wants real vehicle damage (spz-vehfunc)
+local CLIENT_FLAGS = { inMinigame = 'string', vehDamage = 'boolean' }
+
+RegisterNetEvent('spz:setPlayerFlag', function(key, value)
+    local src = source
+    local kind = CLIENT_FLAGS[key]
+    if not kind then return end
+    if value ~= nil and value ~= false and type(value) ~= kind then return end
+    if kind == 'string' and type(value) == 'string' and #value > 48 then return end
+    Player(src).state:set(key, (value ~= false) and value or nil, true)
+end)

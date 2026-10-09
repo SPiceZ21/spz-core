@@ -52,6 +52,23 @@ exports("CreateBucket", function(label, populationEnabled)
     return id
 end)
 
+-- 6.2b RegisterBucket
+-- For a resource that owns a FIXED bucket id with its own lockdown rules
+-- (prl-rocketleague uses 4747, relaxed, because its cars are client-made).
+-- Registering it stops the reconciliation sweep below from treating players in
+-- it as stranded and sending them home every 15 s. Never auto-deleted.
+exports("RegisterBucket", function(id, label)
+    id = tonumber(id)
+    if not id or id == 0 then return false end
+    if not BucketRegistry[id] then
+        BucketRegistry[id] = { id = id, label = label or ("ext_%d"):format(id), players = {},
+                               createdAt = os.time(), external = true }
+    else
+        BucketRegistry[id].external = true
+    end
+    return true
+end)
+
 -- 6.5 DeleteBucket
 local function DeleteBucket(bucketId)
     bucketId = tonumber(bucketId)
@@ -165,7 +182,7 @@ local function RemovePlayerFromBucket(source)
     
     -- Auto-cleanup check: If the bucket is now empty, delete it
     local bucket = BucketRegistry[oldBucket]
-    if bucket and #bucket.players == 0 then
+    if bucket and #bucket.players == 0 and not bucket.external then
         DeleteBucket(oldBucket)
     end
     

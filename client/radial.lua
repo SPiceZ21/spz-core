@@ -178,6 +178,34 @@ local function MinigameItems()
         }
     end
 
+    if Has('spz-colorrush') then
+        items[#items + 1] = {
+            id = 'mg_colorrush', icon = 'palette', label = 'Color Rush',
+            onSelect = Run('colorrushmenu'),
+        }
+    end
+
+    if Has('spz-rocketleague') then
+        items[#items + 1] = {
+            id = 'mg_rocketleague', icon = 'futbol', label = 'Rocket League',
+            onSelect = Run('rocketleaguemenu'),
+        }
+    end
+
+    if Has('spz-demolition') then
+        items[#items + 1] = {
+            id = 'mg_demolition', icon = 'car-burst', label = 'Demolition',
+            onSelect = Run('demolitionmenu'),
+        }
+    end
+
+    if Has('spz-bomb') then
+        items[#items + 1] = {
+            id = 'mg_bomb', icon = 'bomb', label = 'Bomb Tag',
+            onSelect = Run('bombtagmenu'),
+        }
+    end
+
     -- A duel needs a target, and the command takes it as an argument. Asking
     -- here keeps the player out of the chat box.
     if Has('spz-races') then
@@ -337,7 +365,7 @@ local function Schedule()
     end)
 end
 
-for _, key in ipairs({ 'inRace', 'inQueue', 'pendingRace' }) do
+for _, key in ipairs({ 'inRace', 'inQueue', 'pendingRace', 'inMinigame' }) do
     AddStateBagChangeHandler(key, ('player:%s'):format(GetPlayerServerId(PlayerId())), Schedule)
 end
 
