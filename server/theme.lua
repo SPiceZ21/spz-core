@@ -43,6 +43,11 @@ exports('ReloadTheme', function()
     return ActiveTheme
 end)
 
+-- A client asking for it (its cached copy was empty after a restart).
+RegisterNetEvent('SPZ:requestTheme', function()
+    broadcastTheme(source)
+end)
+
 -- Send to newly connecting clients.
 AddEventHandler('SPZ:playerConnected', function(source)
     broadcastTheme(source)
