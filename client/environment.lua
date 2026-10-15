@@ -6,6 +6,13 @@
 local myWeather = nil          -- nil = follow server/default
 local myHour, myMinute = nil, nil
 
+-- Scene override: a game mode forcing the weather for its match (Cyclone's
+-- thunderstorm). Wins over the personal and synced weather while set; cleared
+-- by the mode when the match ends, which hands back to whatever applied before.
+--   TriggerEvent("spz:sceneWeather", "THUNDER")   -- on
+--   TriggerEvent("spz:sceneWeather", nil)         -- off
+local sceneWeather = nil
+
 -- All core notifications share one anchor (Config.notify_position).
 local function Notify(msg, ntype)
     lib.notify({
@@ -43,24 +50,51 @@ end
 -- The clock is re-asserted every frame. GTA's clock keeps ticking between
 -- calls, so a 1s interval let it drift ~1 in-game minute and snap back —
 -- visible as lighting/shadow flicker. One native per frame is cheap.
+--
+-- The server advances the synced clock once per game minute (dynamic time).
+-- Between updates the seconds are filled in from envTimeRate, so the sun moves
+-- smoothly instead of stepping every minute.
+local syncKey, syncAt = nil, 0
 CreateThread(function()
     while true do
-        local h, m = myHour, myMinute or 0
+        local h, m, s = myHour, myMinute or 0, 0
         if not h then
             local t = GlobalState.envTime
-            if t then h, m = t.h, t.m end
+            if t then
+                h, m = t.h, t.m
+                local key = h * 60 + m
+                if key ~= syncKey then syncKey, syncAt = key, GetGameTimer() end
+                local rate = GlobalState.envTimeRate or 0
+                if rate > 0 then
+                    s = math.min(59, math.floor((GetGameTimer() - syncAt) / (rate * 1000) * 60))
+                end
+            end
         end
         if h then
-            NetworkOverrideClockTime(h, m, 0)
+            NetworkOverrideClockTime(h, m, s)
         end
         Wait(0)
     end
 end)
 
+local function currentWeather()
+    return sceneWeather or myWeather or GlobalState.envWeather
+end
+
+AddEventHandler("spz:sceneWeather", function(w)
+    sceneWeather = type(w) == "string" and w:upper() or nil
+    if not sceneWeather then
+        ClearOverrideWeather()
+        ClearWeatherTypePersist()
+    end
+    _invalidateWeatherCache()
+    applyWeather(currentWeather())    -- now, not on the next 2 s tick
+end)
+
 -- Weather only needs checking occasionally — it changes rarely.
 CreateThread(function()
     while true do
-        applyWeather(myWeather or GlobalState.envWeather)
+        applyWeather(currentWeather())
         Wait(2000)
     end
 end)
@@ -108,7 +142,7 @@ RegisterCommand("weather", function()
     end
 
     myWeather = input[1]
-    applyWeather()
+    applyWeather(currentWeather())
     Notify("Weather → " .. myWeather, "success")
 end, false)
 

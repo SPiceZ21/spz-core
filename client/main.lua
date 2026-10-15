@@ -7,16 +7,25 @@ AddEventHandler('onResourceStop', function(resourceName)
 end)
 
 -- ── Infinite Health & Invincibility ───────────────────────────────────────
+-- spz-admin's "Set on fire" troll needs the ped to be ignitable for a moment:
+-- it asks for a pause of the invincibility flags only. Health is still topped
+-- up every tick, so the player burns but can never actually die.
+local invPauseUntil = 0
+AddEventHandler("spz-admin:pedDamagePause", function(ms)
+    invPauseUntil = math.max(invPauseUntil, GetGameTimer() + (tonumber(ms) or 0))
+end)
+
 Citizen.CreateThread(function()
     while true do
         local ped = PlayerPedId()
         local playerId = PlayerId()
         
-        -- Enforce invincibility
-        if GetPlayerInvincible(playerId) == false then
+        -- Enforce invincibility (unless an admin troll paused it)
+        local paused = GetGameTimer() < invPauseUntil
+        if not paused and GetPlayerInvincible(playerId) == false then
             SetPlayerInvincible(playerId, true)
         end
-        if GetEntityCanBeDamaged(ped) then
+        if not paused and GetEntityCanBeDamaged(ped) then
             SetEntityInvincible(ped, true)
             SetEntityCanBeDamaged(ped, false)
         end

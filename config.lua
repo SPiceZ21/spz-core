@@ -46,6 +46,11 @@ Config.SafeZone = { coords = vector3(-899.6, -2039.5, 9.4), heading = 45.0 }
 -- with /time or /weather (which always wins locally until reset).
 Config.Environment = {
     weather = "EXTRASUNNY",   -- canonical weather for the whole server
-    hour    = 19,             -- canonical clock (locked golden-hour evening)
+    hour    = 19,             -- clock at server start
     minute  = 30,
+    -- Dynamic time: the clock runs on the server. minuteSeconds = real seconds
+    -- per in-game minute (2.0 = GTA's own pace, a full day every 48 min).
+    -- dynamic = false locks it at hour:minute. /freezetime toggles it live.
+    dynamic       = true,
+    minuteSeconds = 2.0,
 }

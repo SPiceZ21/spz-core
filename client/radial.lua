@@ -164,6 +164,13 @@ end
 local function MinigameItems()
     local items = {}
 
+    if Has('spz-minigames') then
+        items[#items + 1] = {
+            id = 'mg_hub', icon = 'gamepad', label = 'Minigame Hub',
+            onSelect = Run('minigames'),
+        }
+    end
+
     if Has('spz-hideseek') then
         items[#items + 1] = {
             id = 'mg_hideseek', icon = 'user-secret', label = 'Hide & Seek',
