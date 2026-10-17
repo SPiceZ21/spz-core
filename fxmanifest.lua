@@ -34,6 +34,7 @@ client_scripts {
   'client/main.lua',
   'client/config_sync.lua',
   'client/theme_sync.lua',
+  'client/keys.lua',
   'client/environment.lua',
   'client/ghost.lua',
   'client/fade.lua',
