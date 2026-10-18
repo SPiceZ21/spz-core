@@ -13,12 +13,11 @@ local myHour, myMinute = nil, nil
 --   TriggerEvent("spz:sceneWeather", nil)         -- off
 local sceneWeather = nil
 
--- All core notifications share one anchor (Config.notify_position).
+-- Where it shows is set once for every toast: the spz_notify_position convar (patched ox_lib).
 local function Notify(msg, ntype)
     lib.notify({
         description = msg,
         type        = ntype or "info",
-        position    = (Config and Config.notify_position) or "center-left",
     })
 end
 

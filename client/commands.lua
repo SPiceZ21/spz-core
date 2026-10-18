@@ -7,7 +7,6 @@ local function Notify(msg, type)
     lib.notify({
         description = msg,
         type        = type or "info",
-        position    = (Config and Config.notify_position) or "center-left",
     })
 end
 

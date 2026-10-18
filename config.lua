@@ -6,10 +6,11 @@ Config = {}
 Config.debug = false
 
 -- Notifications
--- ox_lib notification anchor used by every spz-core notify call.
--- 'top' | 'top-right' | 'top-left' | 'bottom' | 'bottom-right' | 'bottom-left'
--- | 'center-right' | 'center-left'
-Config.notify_position = "center-left"
+-- Notification position: NOT set here or in any script. The patched ox_lib
+-- puts every toast at one anchor from server.cfg:
+--   setr spz_notify_position "center-right"
+-- (top, top-right, top-left, bottom, bottom-right, bottom-left, center-right,
+--  center-left). spz-tutorial reads the same convar to highlight the zone.
 
 -- Environment Control
 Config.disable_npcs = false                 -- Legacy flag: set to true to force completely 0 density for all NPCs
