@@ -299,6 +299,7 @@ local function LeaderboardItems()
     return {
         { id = 'lb_open',    icon = 'ranking-star', label = 'Leaderboard',  onSelect = Run('leaderboard') },
         { id = 'lb_results', icon = 'trophy',       label = 'Last Results', onSelect = Run('raceresults') },
+        { id = 'lb_speed',   icon = 'gauge-high',   label = 'Speed Records', onSelect = Run('speedrecords') },
     }
 end
 

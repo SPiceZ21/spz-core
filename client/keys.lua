@@ -52,7 +52,9 @@ end
 -- Gamepad buttons (RegisterKeyMapping "PAD_DIGITALBUTTON" names) -> Xbox
 -- labels, the layout GTA itself prompts with.
 local PAD = {
-    RDOWN_INDEX = "A", RRIGHT_INDEX = "B", RLEFT_INDEX = "X", RUP_INDEX = "Y",
+    -- Face buttons carry a "PAD " prefix so a UI never mistakes them for the
+    -- keyboard letters A / B / X / Y (KeyGlyph draws only "PAD x" as a pad button).
+    RDOWN_INDEX = "PAD A", RRIGHT_INDEX = "PAD B", RLEFT_INDEX = "PAD X", RUP_INDEX = "PAD Y",
     L1_INDEX = "LB", R1_INDEX = "RB", L2_INDEX = "LT", R2_INDEX = "RT",
     L3_INDEX = "LS", R3_INDEX = "RS",
     LUP_INDEX = "D-PAD ↑", LDOWN_INDEX = "D-PAD ↓", LLEFT_INDEX = "D-PAD ←", LRIGHT_INDEX = "D-PAD →",
