@@ -177,3 +177,39 @@ Citizen.CreateThread(function()
     end
 end)
 
+
+-- ── Return hold ──────────────────────────────────────────────────────────────
+-- Sent by server/buckets.lua when a race or minigame puts us back in freeroam.
+-- Freezes the player (and their car) for RETURN_HOLD_MS so the teleport lands
+-- before anyone can drive or walk off. A second return restarts the hold.
+local RETURN_HOLD_MS = 1000
+local holdToken = 0
+
+RegisterNetEvent("SPZ:returnHold", function()
+    holdToken = holdToken + 1
+    local myToken = holdToken
+    Citizen.CreateThread(function()
+        local untilAt = GetGameTimer() + RETURN_HOLD_MS
+        local held = {}
+        while GetGameTimer() < untilAt and holdToken == myToken do
+            local ped = PlayerPedId()
+            local veh = GetVehiclePedIsIn(ped, false)
+            for _, e in ipairs({ ped, veh }) do
+                if e ~= 0 and DoesEntityExist(e) then
+                    FreezeEntityPosition(e, true)
+                    held[e] = true
+                end
+            end
+            DisableAllControlActions(0)
+            EnableControlAction(0, 1, true)   -- look around still works
+            EnableControlAction(0, 2, true)
+            Citizen.Wait(0)
+        end
+        if holdToken ~= myToken then return end
+        -- Leave the ped alone if the spawn menu took over and froze it itself.
+        if LocalPlayer.state.spawnMenuOpen then held[PlayerPedId()] = nil end
+        for e in pairs(held) do
+            if DoesEntityExist(e) then FreezeEntityPosition(e, false) end
+        end
+    end)
+end)

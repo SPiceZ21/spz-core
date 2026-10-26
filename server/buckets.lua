@@ -155,6 +155,12 @@ exports("AssignPlayerToBucket", function(source, bucketId)
     if oldBucket ~= bucketId then
         TriggerEvent(SPZ.Events.BUCKET_CHANGED, source, oldBucket, bucketId)
     end
+
+    -- Back to freeroam from a race / minigame: hold them still for a moment so
+    -- they land in the spawn instead of rolling off it (client/main.lua).
+    if bucketId == 0 and realBucket ~= 0 then
+        TriggerClientEvent("SPZ:returnHold", source)
+    end
     return true
 end)
 
