@@ -171,13 +171,6 @@ local function MinigameItems()
         }
     end
 
-    if Has('spz-hideseek') then
-        items[#items + 1] = {
-            id = 'mg_hideseek', icon = 'user-secret', label = 'Hide & Seek',
-            onSelect = Run('hideseekmenu'),
-        }
-    end
-
     if Has('spz-pursuit') then
         items[#items + 1] = {
             id = 'mg_pursuit', icon = 'car-on', label = 'Pursuit',

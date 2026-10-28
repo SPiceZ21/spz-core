@@ -65,6 +65,12 @@ local function UsingPad() return not IsUsingKeyboard(0) end
 
 local cache = {}   -- [key] = { value, at }
 
+-- A key-mapped command's control hash: joaat(name) with the top bit set, as an
+-- unsigned 32-bit value (GetHashKey returns it signed).
+local function mappingHash(name)
+    return (GetHashKey(name) | 0x80000000) & 0xFFFFFFFF
+end
+
 local function cached(key, compute)
     local c, now = cache[key], GetGameTimer()
     if c and now - c.at < 1000 then return c.value end
@@ -78,9 +84,23 @@ local function KeyFor(command, default, pad)
     if pad and UsingPad() then return PadLabel(pad) end
     if type(command) ~= "string" or command == "" then return default end
     return cached("c:" .. command, function()
-        local hash = (GetHashKey(command) | 0x80000000) & 0xFFFFFFFF
-        local ok, raw = pcall(GetControlInstructionalButton, 0, hash, true)
-        return ok and label(raw, default) or default
+        -- The command as given first, then its +/- twin: a hint may name either
+        -- half of a +cmd / -cmd pair, but only the one RegisterKeyMapping was
+        -- given has a binding. Group 0 first, then FRONTEND (2) as a fallback.
+        local names = { command }
+        if command:sub(1, 1) == "+" or command:sub(1, 1) == "-" then
+            names[2] = "+" .. command:sub(2)
+        else
+            names[2] = "+" .. command
+        end
+        for _, name in ipairs(names) do
+            for _, group in ipairs({ 0, 2 }) do
+                local ok, raw = pcall(GetControlInstructionalButton, group, mappingHash(name), true)
+                local l = ok and label(raw, nil)
+                if l then return l end
+            end
+        end
+        return default
     end)
 end
 
@@ -92,6 +112,20 @@ local function KeyForControl(control, default, pad)
         return ok and label(raw, default) or default
     end)
 end
+
+-- /keydebug <command> — what GTA reports for a command's binding.
+RegisterCommand("keydebug", function(_, args)
+    local cmd = args[1]
+    if not cmd then print("usage: /keydebug <command>") return end
+    for _, name in ipairs({ cmd, "+" .. cmd:gsub("^[+-]", "") }) do
+        for _, group in ipairs({ 0, 2 }) do
+            local ok, raw = pcall(GetControlInstructionalButton, group, mappingHash(name), true)
+            print(("[keys] %s group %d -> %s"):format(name, group, ok and tostring(raw) or "error"))
+        end
+    end
+    cache["c:" .. cmd] = nil
+    print(("[keys] KeyFor(%s) = %s, using pad: %s"):format(cmd, KeyFor(cmd, "?"), tostring(UsingPad())))
+end, false)
 
 exports("KeyFor", KeyFor)
 exports("KeyForControl", KeyForControl)
