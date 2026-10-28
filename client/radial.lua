@@ -286,6 +286,17 @@ local function AppearanceItems()
     }
 end
 
+local function EmoteItems()
+    if not Has('spz-emotes') then return {} end
+
+    return {
+        { id = 'emote_menu',  icon = 'face-smile',  label = 'Emote Menu', onSelect = Run('emotes') },
+        { id = 'emote_dance', icon = 'music',       label = 'Dance',      onSelect = Run('e dance') },
+        { id = 'emote_wave',  icon = 'hand',        label = 'Wave',       onSelect = Run('e wave') },
+        { id = 'emote_stop',  icon = 'circle-stop', label = 'Stop',       onSelect = Run('e') },
+    }
+end
+
 local function LeaderboardItems()
     if not Has('spz-leaderboard') then return {} end
 
@@ -312,6 +323,7 @@ local SUBMENUS = {
     { id = 'spz_minigames',   icon = 'gamepad',        label = 'Minigames',   build = MinigameItems },
     { id = 'spz_vehicle',     icon = 'car',            label = 'Vehicle',     build = VehicleItems },
     { id = 'spz_appearance',  icon = 'user-pen',       label = 'Appearance',  build = AppearanceItems },
+    { id = 'spz_emotes',      icon = 'face-smile',     label = 'Emotes',      build = EmoteItems },
     { id = 'spz_leaderboard', icon = 'ranking-star',   label = 'Leaderboard', build = LeaderboardItems },
     { id = 'spz_crew',        icon = 'users',          label = 'Crew',        build = CrewItems },
 }
