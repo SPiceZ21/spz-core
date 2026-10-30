@@ -97,3 +97,44 @@ RegisterCommand("tpm", function(_, args)
     SetEntityCoordsNoOffset(entity, x, y, z + 1.0, false, false, false)
     Notify("Teleported to waypoint.", "success")
 end, false)
+
+-- ── Rockstar Editor ───────────────────────────────────────────────────────────
+-- /record      start recording a clip (again: stop and save it)
+-- /stoprecord  stop and save the clip
+-- /discardclip stop without saving
+-- /editor      open the Rockstar Editor (clips are under Clip Management)
+
+RegisterCommand("record", function()
+    if IsRecording() then
+        StopRecordingAndSaveClip()
+        Notify("Clip saved — open it with /editor.", "success")
+        return
+    end
+    StartRecording(1)
+    Notify("Recording… /record or /stoprecord to save, /discardclip to throw it away.", "info")
+end, false)
+
+RegisterCommand("stoprecord", function()
+    if not IsRecording() then return Notify("You are not recording.", "error") end
+    StopRecordingAndSaveClip()
+    Notify("Clip saved — open it with /editor.", "success")
+end, false)
+
+RegisterCommand("discardclip", function()
+    if not IsRecording() then return Notify("You are not recording.", "error") end
+    StopRecordingAndDiscardClip()
+    Notify("Recording discarded.", "info")
+end, false)
+
+RegisterCommand("editor", function()
+    if LocalPlayer.state.inRace or LocalPlayer.state.inMinigame then
+        return Notify("Leave the race or minigame first — the editor takes you out of the session view.", "error")
+    end
+    if IsRecording() then StopRecordingAndSaveClip() end
+    ActivateRockstarEditor()
+end, false)
+
+TriggerEvent("chat:addSuggestion", "/record", "Start / stop-and-save a Rockstar Editor clip")
+TriggerEvent("chat:addSuggestion", "/stoprecord", "Stop recording and save the clip")
+TriggerEvent("chat:addSuggestion", "/discardclip", "Stop recording without saving")
+TriggerEvent("chat:addSuggestion", "/editor", "Open the Rockstar Editor")

@@ -297,6 +297,17 @@ local function EmoteItems()
     }
 end
 
+-- Rockstar Editor (client/commands.lua). Recording state is not tracked by the
+-- rebuild triggers, so Record is a toggle and Stop/Discard are always offered.
+local function RecordItems()
+    return {
+        { id = 'rec_toggle',  icon = 'circle-dot',  label = 'Record / Save', onSelect = Run('record') },
+        { id = 'rec_discard', icon = 'trash',       label = 'Discard Clip',  onSelect = Run('discardclip') },
+        { id = 'rec_editor',  icon = 'film',        label = 'Rockstar Editor', onSelect = Confirm(
+            'Rockstar Editor', 'Opens the editor. You will be taken out of the game world until you exit it. Continue?', 'editor') },
+    }
+end
+
 local function LeaderboardItems()
     if not Has('spz-leaderboard') then return {} end
 
@@ -324,6 +335,7 @@ local SUBMENUS = {
     { id = 'spz_vehicle',     icon = 'car',            label = 'Vehicle',     build = VehicleItems },
     { id = 'spz_appearance',  icon = 'user-pen',       label = 'Appearance',  build = AppearanceItems },
     { id = 'spz_emotes',      icon = 'face-smile',     label = 'Emotes',      build = EmoteItems },
+    { id = 'spz_record',      icon = 'video',          label = 'Record',      build = RecordItems },
     { id = 'spz_leaderboard', icon = 'ranking-star',   label = 'Leaderboard', build = LeaderboardItems },
     { id = 'spz_crew',        icon = 'users',          label = 'Crew',        build = CrewItems },
 }
