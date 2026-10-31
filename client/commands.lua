@@ -13,6 +13,9 @@ end
 -- ── /fix — repair current vehicle ─────────────────────────────────────────────
 -- Fully repairs body, engine, and visual damage on the vehicle you're driving.
 
+local PURSUIT_FIX_MS = 10000
+local fixing = false
+
 RegisterCommand("fix", function()
     local ped = PlayerPedId()
     local veh = GetVehiclePedIsIn(ped, false)
@@ -20,6 +23,25 @@ RegisterCommand("fix", function()
     if veh == 0 then
         Notify("You are not in a vehicle.", "error")
         return
+    end
+
+    -- Hot Pursuit: an instant fix made both sides unkillable. A repair there
+    -- takes PURSUIT_FIX_MS standing still; moving or cancelling aborts it.
+    if LocalPlayer.state.inPursuit then
+        if fixing then return end
+        fixing = true
+        local done = lib.progressBar({
+            duration     = PURSUIT_FIX_MS,
+            label        = "Repairing vehicle...",
+            canCancel    = true,
+            disable      = { car = true, combat = true },
+        })
+        fixing = false
+        if not done then
+            Notify("Repair cancelled.", "error")
+            return
+        end
+        if GetVehiclePedIsIn(ped, false) ~= veh or not LocalPlayer.state.inPursuit then return end
     end
 
     SetVehicleFixed(veh)
