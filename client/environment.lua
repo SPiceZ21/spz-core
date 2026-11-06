@@ -54,9 +54,17 @@ end
 -- Between updates the seconds are filled in from envTimeRate, so the sun moves
 -- smoothly instead of stepping every minute.
 local syncKey, syncAt = nil, 0
+-- A scene's own hour (e.g. the TAB hub's map: always midday), over /time and
+-- the server clock while set:  TriggerEvent("spz:sceneTime", 13)  /  nil to clear.
+local sceneHour = nil
+AddEventHandler("spz:sceneTime", function(h)
+    sceneHour = tonumber(h)
+    if not sceneHour then NetworkClearClockTimeOverride() end
+end)
 CreateThread(function()
     while true do
         local h, m, s = myHour, myMinute or 0, 0
+        if sceneHour then h, m = sceneHour, 0 end
         if not h then
             local t = GlobalState.envTime
             if t then
