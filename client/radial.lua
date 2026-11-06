@@ -120,7 +120,7 @@ local function RaceItems()
             id = 'race_flip', icon = 'car-burst', label = 'Flip Car',
             onSelect = Run('spz_flip_car'),
         }
-        if Has('spz-raceUI') then
+        if Has('spz-races') then
             items[#items + 1] = {
                 id = 'race_standings', icon = 'list-ol', label = 'Standings',
                 onSelect = Run('standingstoggle'),
@@ -309,7 +309,7 @@ local function RecordItems()
 end
 
 local function LeaderboardItems()
-    if not Has('spz-leaderboard') then return {} end
+    if not Has('spz-races') then return {} end
 
     return {
         { id = 'lb_open',    icon = 'ranking-star', label = 'Leaderboard',  onSelect = Run('leaderboard') },
