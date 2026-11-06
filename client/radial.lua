@@ -228,7 +228,7 @@ local function VehicleItems()
     local items = {}
     local busy = InRace() or InTimeTrial()
 
-    if Has('spz-carspawner') then
+    if Has('spz-vehicles') then
         -- Spawning or deleting mid-race would desync the racer from the field,
         -- so both drop out of the menu while a route is running.
         if not busy then
@@ -248,7 +248,7 @@ local function VehicleItems()
         onSelect = Run('fix'),
     }
 
-    if Has('spz-tunners') and not busy then
+    if Has('spz-vehicles') and not busy then
         items[#items + 1] = {
             id = 'veh_tune', icon = 'gauge-high', label = 'Tune',
             onSelect = Run('tune'),
@@ -266,7 +266,7 @@ local function VehicleItems()
         }
     end
 
-    if Has('spz-vehfunc') then
+    if Has('spz-vehicles') then
         items[#items + 1] = {
             id = 'veh_idlecam', icon = 'video', label = 'Idle Cam',
             onSelect = Run('idlecam'),
