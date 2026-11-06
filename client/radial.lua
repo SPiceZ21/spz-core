@@ -277,7 +277,7 @@ local function VehicleItems()
 end
 
 local function AppearanceItems()
-    if not Has('spz-appearance') then return {} end
+    if not Has('spz-core') then return {} end
 
     return {
         { id = 'app_edit',  icon = 'shirt',        label = 'Character',    onSelect = Run('appearance') },

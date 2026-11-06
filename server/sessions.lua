@@ -77,8 +77,8 @@ end)
 -- profile existed — the "No profile found" path that left them in the menu
 -- request loop forever.
 local function analyticsReject(src, reason)
-    if GetResourceState("spz-analytics") == "started" then
-        pcall(function() exports["spz-analytics"]:Reject(src, reason) end)
+    if GetResourceState("spz-core") == "started" then
+        pcall(function() exports["spz-core"]:Reject(src, reason) end)
     end
 end
 
@@ -99,7 +99,7 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
     -- spz-identity owns player data; spz-core does not depend on it existing.
     -- If it is not running, let the player in — a server without identity is a
     -- degraded server, not a closed one.
-    if GetResourceState('spz-identity') ~= 'started' then
+    if GetResourceState('spz-core') ~= 'started' then
         deferrals.done()
         return
     end
@@ -107,7 +107,7 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
     deferrals.update("Loading your driver profile...")
 
     local ok, result = pcall(function()
-        return exports['spz-identity']:PrepareProfile(identifier)
+        return exports['spz-core']:PrepareProfile(identifier)
     end)
 
     if not ok then
