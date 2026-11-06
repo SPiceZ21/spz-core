@@ -62,6 +62,10 @@ local CreateCinematicCamera, DestroyCinematicCamera
 local PlayMenuIdle
 local ApplyPreviewModel
 
+-- How long the transition cover (spz-hud) takes to close; the loading screen
+-- comes down only after it has, so nothing raw shows between the slices.
+local COVER_CLOSE_MS = 900
+
 -- ── Loading screen ────────────────────────────────────────────────────────────
 --
 -- spz-loading owns the screen's lifetime; this file only reports progress and
@@ -157,7 +161,9 @@ RegisterNetEvent("SPZ:openCharacterCreation", function(route)
         -- immediately — the appearance step never appeared.
         ApplyPreviewModel(0)
 
-        Wait(120)                 -- let the cover paint before anything uncovers
+        -- The cover (spz-hud) closes over the loading screen with the slice wipe;
+        -- the loading screen is only taken down once it has fully closed.
+        Wait(COVER_CLOSE_MS)
         LoadStage('world')
         AwaitCollision(c, 3000)
         KillLoadingScreen()       -- handing off from one full-screen cover to another
@@ -545,8 +551,10 @@ RegisterNetEvent("SPZ:spawnPlayerTarget", function(data)
     -- gender: 0 = male (mp_m_freemode_01), 1 = female (mp_f_freemode_01)
     local modelHash = data.gender == 1 and 'mp_f_freemode_01' or 'mp_m_freemode_01'
 
-    DoScreenFadeOut(500)
-    Wait(500)
+    -- The transition cover (spz-hud, via client/fade.lua) closes over the menu,
+    -- the spawn happens behind it, and it sweeps open on the world. Falls back
+    -- to a plain fade without spz-hud.
+    exports['spz-core']:FadeOut(500, 'Entering Los Santos')
 
     SendNUIMessage({ type = 'hide' })
     SetNuiFocus(false, false)
@@ -679,7 +687,7 @@ RegisterNetEvent("SPZ:spawnPlayerTarget", function(data)
         end
     end)
 
-    DoScreenFadeIn(1000)
+    exports['spz-core']:FadeIn(1000)
 end)
 
 -- ── Show play menu ────────────────────────────────────────────────────────────
@@ -816,7 +824,9 @@ RegisterNetEvent("SPZ:showPlayMenu", function(playerData)
     -- Reveal once the (preloaded) area is streamed and the menu has mounted —
     -- the cover fades away last, so nothing raw is ever seen.
     CreateThread(function()
-        Wait(120)                 -- let the cover paint before anything uncovers
+        -- The cover (spz-hud) closes over the loading screen with the slice wipe;
+        -- the loading screen is only taken down once it has fully closed.
+        Wait(COVER_CLOSE_MS)
         LoadStage('world')
         AwaitCollision(pv.coords, 3000)
         KillLoadingScreen()       -- handing off from one full-screen cover to another
