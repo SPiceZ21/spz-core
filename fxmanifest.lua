@@ -90,6 +90,7 @@ client_scripts {
   '@spz-hud/app.lua',
   'client/spawn.lua',
   'client/analytics.lua',
+  'client/mappins.lua',      -- GetMapPins: spawn points
 }
 
 dependencies {
