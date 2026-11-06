@@ -287,7 +287,7 @@ local function AppearanceItems()
 end
 
 local function EmoteItems()
-    if not Has('spz-emotes') then return {} end
+    if not Has('spz-hud') then return {} end
 
     return {
         { id = 'emote_menu',  icon = 'face-smile',  label = 'Emote Menu', onSelect = Run('emotes') },
