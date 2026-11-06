@@ -145,7 +145,7 @@ local function RaceItems()
         }
     end
 
-    if Has('spz-spectate') then
+    if Has('spz-races') then
         if not racing and not trial then
             items[#items + 1] = {
                 id = 'race_spectate', icon = 'eye', label = 'Spectate',
