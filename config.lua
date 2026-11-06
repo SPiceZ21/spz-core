@@ -1,6 +1,8 @@
 -- spz-core Operator Configuration
 
-Config = {}
+-- Keep the table if it already exists: the merged parts (Config.Spawn,
+-- Config.Analytics, Config.Identity) hang off it.
+Config = Config or {}
 
 -- General
 Config.debug = false

@@ -23,7 +23,8 @@ shared_scripts {
 
 server_scripts {
   '@oxmysql/lib/MySQL.lua',
-  'config.lua',
+  -- config.lua is NOT listed again here: it is already a shared script, and a
+  -- second run (Config = {}) wiped Config.Spawn / Config.Analytics on the server.
   'server/migrations.lua',   -- schema owner: runs before anything touches the DB
   'server/bootstrap.lua',
   'server/config.lua',
