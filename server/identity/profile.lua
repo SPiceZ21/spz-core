@@ -340,6 +340,11 @@ local function UpdateProfile(source, changes)
     end
 
     local changedSubset = {}
+    -- spz-bridge listens for this to mirror credits into a framework economy.
+    if changes.credits ~= nil and tonumber(changes.credits) ~= tonumber(profile.credits) then
+        local old, new = tonumber(profile.credits) or 0, tonumber(changes.credits) or 0
+        SetTimeout(0, function() TriggerEvent("SPZ:creditsChanged", source, old, new) end)
+    end
     for key, value in pairs(changes) do
         if WhitelistedProfileKeys[key] then
             profile[key] = value
